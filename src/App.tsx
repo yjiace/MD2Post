@@ -19,7 +19,6 @@ import { formatPangu } from './parser/pangu';
 import { runPrecheck } from './utils/precheck';
 import { transformToInlinedHtml } from './platforms/wechatInliner';
 import { copyRichTextToClipboard, copyTextToClipboard } from './utils/clipboard';
-import { exportMarkdown } from './utils/exportHelper';
 
 import { Header } from './components/Header';
 import { Toolbar } from './components/Toolbar';
@@ -301,7 +300,12 @@ export const App: React.FC = () => {
       });
 
       await copyRichTextToClipboard(inlinedHtml, plainText);
-      showToast('已复制，请到知乎粘贴');
+      const hasMermaid = /```mermaid/i.test(rawContent);
+      if (hasMermaid) {
+        showToast('已复制，请到知乎粘贴（流程图如遇知乎拦截可点击预览区PNG直接插入）');
+      } else {
+        showToast('已复制，请到知乎专栏粘贴');
+      }
     } catch (err) {
       console.error('Zhihu copy failed:', err);
       showToast('复制失败，请重试');
@@ -318,13 +322,30 @@ export const App: React.FC = () => {
       setCopiedAction('juejin');
 
       let freshCleanMarkdown = preprocessMarkdown(rawContent).cleanMarkdown || rawContent;
-      freshCleanMarkdown = freshCleanMarkdown
-        .replace(/^>\s*\[!NOTE\][ \t]*\n?/gmi, '> ℹ️ **注意**\n> ')
-        .replace(/^>\s*\[!TIP\][ \t]*\n?/gmi, '> 💡 **提示**\n> ')
-        .replace(/^>\s*\[!IMPORTANT\][ \t]*\n?/gmi, '> ❗️ **重点**\n> ')
-        .replace(/^>\s*\[!WARNING\][ \t]*\n?/gmi, '> ⚠️ **警告**\n> ')
-        .replace(/^>\s*\[!CAUTION\][ \t]*\n?/gmi, '> 🛑 **危险**\n> ');
-      freshCleanMarkdown = freshCleanMarkdown.replace(/```mermaid\s*\n\s*flowchart\s+(LR|TD|RL|BT)/gi, '```mermaid\ngraph $1');
+
+      // 1. Adapt GitHub Alert / Callout boxes without extra '>' or nested quotes (Fix Issue 2)
+      freshCleanMarkdown = freshCleanMarkdown.replace(
+        /^([ \t]*>[ \t]*)\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*(.*)$/gmi,
+        (_match, prefix, type, rest) => {
+          const t = type.toUpperCase();
+          let badge = 'ℹ️ **注意**';
+          if (t === 'TIP') badge = '💡 **提示**';
+          else if (t === 'IMPORTANT') badge = '❗️ **重点**';
+          else if (t === 'WARNING') badge = '⚠️ **警告**';
+          else if (t === 'CAUTION') badge = '🛑 **危险**';
+
+          const cleanRest = (rest || '').trim();
+          if (cleanRest) {
+            return `${prefix}${badge}\n${prefix}${cleanRest}`;
+          }
+          return `${prefix}${badge}`;
+        }
+      );
+
+      // 2. Mermaid & Document Content Integrity:
+      // Preserves original Markdown code blocks exactly as authored.
+      // Do NOT inject invalid external URLs or massive base64 strings into markdown text
+      // to avoid Juejin ByteMD editor's "超过最大字符数限制" and "图片地址解析失败" errors.
 
       await copyTextToClipboard(freshCleanMarkdown);
       showToast('已复制，请到稀土掘金粘贴');
@@ -377,46 +398,11 @@ export const App: React.FC = () => {
     }
   };
 
-  // 4. 导出 Markdown
-  const handleExportMarkdown = async () => {
-    try {
-      setCopiedAction('markdown');
-      exportMarkdown(rawContent, currentArticle?.title || 'article');
-      await copyTextToClipboard(rawContent);
-      showToast('已导出 Markdown 文件并复制全文');
-    } catch (err) {
-      console.error('Export markdown failed:', err);
-    } finally {
-      setTimeout(() => setCopiedAction(prev => (prev === 'markdown' ? null : prev)), 1500);
-    }
-  };
-
-  // 5. 导出 PDF
-  const handleExportPdf = () => {
-    try {
-      setCopiedAction('pdf');
-      window.print();
-      showToast('已调起打印，可另存为 PDF');
-    } catch (err) {
-      console.error('Export PDF failed:', err);
-    } finally {
-      setTimeout(() => setCopiedAction(prev => (prev === 'pdf' ? null : prev)), 1500);
-    }
-  };
-
-  // 6. 切换预览模式 (桌面 / 手机)
+  // 4. 切换预览模式 (桌面 / 手机)
   const handleTogglePreviewMode = () => {
     const nextMode = settings.previewMode === 'mobile' ? 'desktop' : 'mobile';
     handleUpdateSettings({ previewMode: nextMode });
     showToast(nextMode === 'mobile' ? '已切换为移动端 375px 预览视口' : '已切换为桌面宽屏视图');
-  };
-
-  // 7. 导出长图
-  const handleExportImage = () => {
-    setCopiedAction('image');
-    window.print();
-    showToast('可通过浏览器打印预览保存长图或 PDF');
-    setTimeout(() => setCopiedAction(prev => (prev === 'image' ? null : prev)), 1500);
   };
 
   // Back to top action for both editor and preview panes
@@ -518,9 +504,7 @@ export const App: React.FC = () => {
           if (file) handleImportFile(file);
         }}
         previewMode={settings.previewMode}
-        onTogglePreviewMode={() =>
-          handleUpdateSettings({ previewMode: settings.previewMode === 'desktop' ? 'mobile' : 'desktop' })
-        }
+        onTogglePreviewMode={handleTogglePreviewMode}
         charCount={charCount}
         readTimeMin={readTimeMin}
         currentThemeId={settings.activeThemeId}

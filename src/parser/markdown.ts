@@ -129,7 +129,7 @@ export function createMarkdownParser(options: RenderOptions = {}) {
                 }
 
                 // If the first paragraph only contained [!TYPE] marker, remove the whole empty paragraph
-                if (!inlineToken.content.trim() && inlineToken.children.length === 0) {
+                if (!inlineToken.content.trim() && (!inlineToken.children || inlineToken.children.length === 0)) {
                   tokens.splice(i, 3);
                 }
               }

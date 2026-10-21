@@ -100,6 +100,9 @@ export const Preview: React.FC<PreviewProps> = ({
               <div class="diagram-toolbar">
                 <span class="diagram-label">Mermaid 流程图</span>
                 <div class="diagram-actions">
+                  <button class="diagram-export-btn" onclick="window.__copyMermaidPng && window.__copyMermaidPng('${uniqueId}', this)" title="复制高清图片到剪贴板 (可直接在掘金等编辑器内按 Ctrl+V 粘贴为官方图床图片)">
+                    复制图片
+                  </button>
                   <button class="diagram-export-btn" onclick="window.__downloadMermaidSvg && window.__downloadMermaidSvg('${uniqueId}')" title="下载 SVG 矢量图">
                     SVG
                   </button>
@@ -162,6 +165,45 @@ export const Preview: React.FC<PreviewProps> = ({
         a.href = pngUrl;
         a.download = `mermaid-${id}.png`;
         a.click();
+      }
+    };
+
+    // Provide global copy PNG image to clipboard function (works seamlessly with Juejin, Zhihu, etc.)
+    (window as any).__copyMermaidPng = async (id: string, btnEl?: HTMLElement) => {
+      try {
+        const container = document.getElementById(`${id}-container`);
+        const wrap = container?.closest('.mermaid-diagram-wrap') as HTMLElement;
+        let pngUrl = wrap?.getAttribute('data-png-url');
+
+        if (!pngUrl) {
+          const svgEl = container?.querySelector('svg');
+          if (svgEl) {
+            const svgContent = new XMLSerializer().serializeToString(svgEl);
+            pngUrl = await svgToPngDataUrl(svgContent);
+          }
+        }
+
+        if (pngUrl) {
+          const res = await fetch(pngUrl);
+          const blob = await res.blob();
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          if (btnEl) {
+            const oldText = btnEl.textContent;
+            btnEl.textContent = '已复制!';
+            btnEl.style.backgroundColor = '#10b981';
+            btnEl.style.color = '#ffffff';
+            setTimeout(() => {
+              btnEl.textContent = oldText;
+              btnEl.style.backgroundColor = '';
+              btnEl.style.color = '';
+            }, 1800);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to copy mermaid image to clipboard:', err);
+        alert('复制图片到剪贴板失败，您可以通过旁边的 PNG 按钮直接下载图片');
       }
     };
   }, [htmlContent, primaryColor]);
