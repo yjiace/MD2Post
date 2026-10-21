@@ -8,11 +8,11 @@ const STORAGE_KEYS = {
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  activeThemeId: 'classic-tech',
-  primaryColor: '#0969da',
-  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
+  activeThemeId: '1',
+  primaryColor: '#ef7060',
+  fontFamily: "Optima-Regular, Optima, PingFangSC-light, PingFangTC-light, 'PingFang SC', Cambria, Cochin, Georgia, Times, 'Times New Roman', serif",
   fontSize: 16,
-  lineHeight: 1.75,
+  lineHeight: 1.6,
   paragraphSpacing: 16,
   customCss: '',
   codeSettings: {
@@ -94,9 +94,12 @@ export function loadSettings(): AppSettings {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const validThemeIds = ['normal', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', 'custom'];
+      const activeThemeId = validThemeIds.includes(parsed.activeThemeId) ? parsed.activeThemeId : '1';
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
+        activeThemeId,
         syncScroll: parsed.syncScroll !== undefined ? parsed.syncScroll : true
       };
     }

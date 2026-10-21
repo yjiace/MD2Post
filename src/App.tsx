@@ -1,6 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import type { PlatformType, ArticleItem, AppSettings } from './types';
-import { PLATFORMS } from './platforms/platformConfig';
+import type { ArticleItem, AppSettings } from './types';
 import { BUILT_IN_THEMES, generateThemeCss } from './themes/themeDefinitions';
 import { BUILT_IN_CODE_THEMES } from './themes/codeThemes';
 import {
@@ -20,6 +19,7 @@ import { formatPangu } from './parser/pangu';
 import { runPrecheck } from './utils/precheck';
 import { transformToInlinedHtml } from './platforms/wechatInliner';
 import { copyRichTextToClipboard, copyTextToClipboard } from './utils/clipboard';
+import { exportMarkdown } from './utils/exportHelper';
 
 import { Header } from './components/Header';
 import { Toolbar } from './components/Toolbar';
@@ -48,8 +48,15 @@ export const App: React.FC = () => {
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
-  const [currentPlatform, setCurrentPlatform] = useState<PlatformType>('wechat');
-  const [copiedPlatform, setCopiedPlatform] = useState<PlatformType | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [copiedAction, setCopiedAction] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(prev => (prev === msg ? null : prev));
+    }, 2500);
+  };
 
   // 2. Modals
   const [isPrecheckOpen, setIsPrecheckOpen] = useState(false);
@@ -227,62 +234,189 @@ export const App: React.FC = () => {
     reader.readAsText(file);
   };
 
-  // Combined Platform Selection & 1-Click Direct Copy Action (guaranteed fresh content)
-  const handlePlatformClickAndCopy = async (p: PlatformType) => {
-    setCurrentPlatform(p);
-    const targetMode = PLATFORMS[p].defaultCopyMode;
-
+  // 1. 复制到微信公众号 (Rich Text with Inlined Weiyan CSS)
+  const handleCopyWechat = async () => {
     try {
-      if (targetMode === 'markdown') {
-        // Ensure fresh clean markdown is copied and adapted for platforms like Juejin
-        let freshCleanMarkdown = preprocessMarkdown(rawContent).cleanMarkdown || rawContent;
-        
-        // 1. Transform GitHub alert syntax [!TYPE] to standard Markdown blockquotes with icons
-        freshCleanMarkdown = freshCleanMarkdown
-          .replace(/^>\s*\[!NOTE\][ \t]*\n?/gmi, '> ℹ️ **注意**\n> ')
-          .replace(/^>\s*\[!TIP\][ \t]*\n?/gmi, '> 💡 **提示**\n> ')
-          .replace(/^>\s*\[!IMPORTANT\][ \t]*\n?/gmi, '> ❗️ **重点**\n> ')
-          .replace(/^>\s*\[!WARNING\][ \t]*\n?/gmi, '> ⚠️ **警告**\n> ')
-          .replace(/^>\s*\[!CAUTION\][ \t]*\n?/gmi, '> 🛑 **危险**\n> ');
+      setCopiedAction('wechat');
 
-        // 2. Transform flowchart LR/TD to graph LR/TD (Juejin's markdown parser only supports graph syntax)
-        freshCleanMarkdown = freshCleanMarkdown.replace(/```mermaid\s*\n\s*flowchart\s+(LR|TD|RL|BT)/gi, '```mermaid\ngraph $1');
+      let domToCopy = (previewContainerRef.current?.querySelector('#nice') ||
+        previewContainerRef.current?.querySelector('.md2post-rendered-content') ||
+        document.querySelector('#nice')) as HTMLElement;
 
-        await copyTextToClipboard(freshCleanMarkdown);
-        setCopiedPlatform(p);
-      } else {
-        // Find rendered content or construct fresh off-screen element
-        let domToCopy = (previewContainerRef.current?.querySelector('.md2post-rendered-content') ||
-          document.querySelector('.md2post-rendered-content')) as HTMLElement;
-
-        if (!domToCopy) {
-          const freshHtml = renderMarkdownWithMath(preprocessMarkdown(rawContent).cleanMarkdown, {
-            codeSettings: settings.codeSettings,
-            showImageCaptions: settings.showImageCaptions
-          });
-          domToCopy = document.createElement('div');
-          domToCopy.className = 'md2post-rendered-content';
-          domToCopy.innerHTML = freshHtml;
-        }
-
-        const { inlinedHtml, plainText } = await transformToInlinedHtml(domToCopy, {
-          theme: activeTheme,
-          primaryColor: settings.primaryColor,
-          codeThemeId: settings.codeSettings.themeId,
-          convertFootnotes: settings.convertWechatFootnotes && (p === 'wechat' || PLATFORMS[p].convertLinksToFootnotes),
-          platform: p
+      if (!domToCopy) {
+        const freshHtml = renderMarkdownWithMath(preprocessMarkdown(rawContent).cleanMarkdown, {
+          codeSettings: settings.codeSettings,
+          showImageCaptions: settings.showImageCaptions
         });
-
-        await copyRichTextToClipboard(inlinedHtml, plainText);
-        setCopiedPlatform(p);
+        domToCopy = document.createElement('div');
+        domToCopy.id = 'nice';
+        domToCopy.innerHTML = freshHtml;
       }
 
-      setTimeout(() => {
-        setCopiedPlatform(prev => (prev === p ? null : prev));
-      }, 1500);
+      const { inlinedHtml, plainText } = await transformToInlinedHtml(domToCopy, {
+        theme: activeTheme,
+        primaryColor: settings.primaryColor,
+        codeThemeId: settings.codeSettings.themeId,
+        convertFootnotes: settings.convertWechatFootnotes,
+        platform: 'wechat'
+      });
+
+      await copyRichTextToClipboard(inlinedHtml, plainText);
+      showToast('已复制，请到微信公众平台粘贴');
     } catch (err) {
-      console.error('Copy failed:', err);
+      console.error('WeChat copy failed:', err);
+      showToast('复制失败，请重试');
+    } finally {
+      setTimeout(() => {
+        setCopiedAction(prev => (prev === 'wechat' ? null : prev));
+      }, 1500);
     }
+  };
+
+  // 2. 复制到知乎 (Rich Text with Inlined CSS & Formulas)
+  const handleCopyZhihu = async () => {
+    try {
+      setCopiedAction('zhihu');
+
+      let domToCopy = (previewContainerRef.current?.querySelector('#nice') ||
+        previewContainerRef.current?.querySelector('.md2post-rendered-content') ||
+        document.querySelector('#nice')) as HTMLElement;
+
+      if (!domToCopy) {
+        const freshHtml = renderMarkdownWithMath(preprocessMarkdown(rawContent).cleanMarkdown, {
+          codeSettings: settings.codeSettings,
+          showImageCaptions: settings.showImageCaptions
+        });
+        domToCopy = document.createElement('div');
+        domToCopy.id = 'nice';
+        domToCopy.innerHTML = freshHtml;
+      }
+
+      const { inlinedHtml, plainText } = await transformToInlinedHtml(domToCopy, {
+        theme: activeTheme,
+        primaryColor: settings.primaryColor,
+        codeThemeId: settings.codeSettings.themeId,
+        convertFootnotes: false,
+        platform: 'zhihu'
+      });
+
+      await copyRichTextToClipboard(inlinedHtml, plainText);
+      showToast('已复制，请到知乎粘贴');
+    } catch (err) {
+      console.error('Zhihu copy failed:', err);
+      showToast('复制失败，请重试');
+    } finally {
+      setTimeout(() => {
+        setCopiedAction(prev => (prev === 'zhihu' ? null : prev));
+      }, 1500);
+    }
+  };
+
+  // 3. 复制到稀土掘金 (Markdown adapted for Juejin parser)
+  const handleCopyJuejin = async () => {
+    try {
+      setCopiedAction('juejin');
+
+      let freshCleanMarkdown = preprocessMarkdown(rawContent).cleanMarkdown || rawContent;
+      freshCleanMarkdown = freshCleanMarkdown
+        .replace(/^>\s*\[!NOTE\][ \t]*\n?/gmi, '> ℹ️ **注意**\n> ')
+        .replace(/^>\s*\[!TIP\][ \t]*\n?/gmi, '> 💡 **提示**\n> ')
+        .replace(/^>\s*\[!IMPORTANT\][ \t]*\n?/gmi, '> ❗️ **重点**\n> ')
+        .replace(/^>\s*\[!WARNING\][ \t]*\n?/gmi, '> ⚠️ **警告**\n> ')
+        .replace(/^>\s*\[!CAUTION\][ \t]*\n?/gmi, '> 🛑 **危险**\n> ');
+      freshCleanMarkdown = freshCleanMarkdown.replace(/```mermaid\s*\n\s*flowchart\s+(LR|TD|RL|BT)/gi, '```mermaid\ngraph $1');
+
+      await copyTextToClipboard(freshCleanMarkdown);
+      showToast('已复制，请到稀土掘金粘贴');
+    } catch (err) {
+      console.error('Juejin copy failed:', err);
+      showToast('复制失败，请重试');
+    } finally {
+      setTimeout(() => {
+        setCopiedAction(prev => (prev === 'juejin' ? null : prev));
+      }, 1500);
+    }
+  };
+
+  // 4. 复制到今日头条 (Rich Text with Inlined CSS & Native Tables)
+  const handleCopyToutiao = async () => {
+    try {
+      setCopiedAction('toutiao');
+
+      let domToCopy = (previewContainerRef.current?.querySelector('#nice') ||
+        previewContainerRef.current?.querySelector('.md2post-rendered-content') ||
+        document.querySelector('#nice')) as HTMLElement;
+
+      if (!domToCopy) {
+        const freshHtml = renderMarkdownWithMath(preprocessMarkdown(rawContent).cleanMarkdown, {
+          codeSettings: settings.codeSettings,
+          showImageCaptions: settings.showImageCaptions
+        });
+        domToCopy = document.createElement('div');
+        domToCopy.id = 'nice';
+        domToCopy.innerHTML = freshHtml;
+      }
+
+      const { inlinedHtml, plainText } = await transformToInlinedHtml(domToCopy, {
+        theme: activeTheme,
+        primaryColor: settings.primaryColor,
+        codeThemeId: settings.codeSettings.themeId,
+        convertFootnotes: false,
+        platform: 'toutiao'
+      });
+
+      await copyRichTextToClipboard(inlinedHtml, plainText);
+      showToast('已复制，请到今日头条创作平台粘贴');
+    } catch (err) {
+      console.error('Toutiao copy failed:', err);
+      showToast('复制失败，请重试');
+    } finally {
+      setTimeout(() => {
+        setCopiedAction(prev => (prev === 'toutiao' ? null : prev));
+      }, 1500);
+    }
+  };
+
+  // 4. 导出 Markdown
+  const handleExportMarkdown = async () => {
+    try {
+      setCopiedAction('markdown');
+      exportMarkdown(rawContent, currentArticle?.title || 'article');
+      await copyTextToClipboard(rawContent);
+      showToast('已导出 Markdown 文件并复制全文');
+    } catch (err) {
+      console.error('Export markdown failed:', err);
+    } finally {
+      setTimeout(() => setCopiedAction(prev => (prev === 'markdown' ? null : prev)), 1500);
+    }
+  };
+
+  // 5. 导出 PDF
+  const handleExportPdf = () => {
+    try {
+      setCopiedAction('pdf');
+      window.print();
+      showToast('已调起打印，可另存为 PDF');
+    } catch (err) {
+      console.error('Export PDF failed:', err);
+    } finally {
+      setTimeout(() => setCopiedAction(prev => (prev === 'pdf' ? null : prev)), 1500);
+    }
+  };
+
+  // 6. 切换预览模式 (桌面 / 手机)
+  const handleTogglePreviewMode = () => {
+    const nextMode = settings.previewMode === 'mobile' ? 'desktop' : 'mobile';
+    handleUpdateSettings({ previewMode: nextMode });
+    showToast(nextMode === 'mobile' ? '已切换为移动端 375px 预览视口' : '已切换为桌面宽屏视图');
+  };
+
+  // 7. 导出长图
+  const handleExportImage = () => {
+    setCopiedAction('image');
+    window.print();
+    showToast('可通过浏览器打印预览保存长图或 PDF');
+    setTimeout(() => setCopiedAction(prev => (prev === 'image' ? null : prev)), 1500);
   };
 
   // Back to top action for both editor and preview panes
@@ -424,10 +558,20 @@ export const App: React.FC = () => {
 
           {/* 浮动在右侧内容区域的官方平台复制列表 */}
           <PlatformDock
-            currentPlatform={currentPlatform}
-            copiedPlatform={copiedPlatform}
-            onPlatformClickAndCopy={handlePlatformClickAndCopy}
+            onCopyWechat={handleCopyWechat}
+            onCopyZhihu={handleCopyZhihu}
+            onCopyJuejin={handleCopyJuejin}
+            onCopyToutiao={handleCopyToutiao}
+            copiedAction={copiedAction}
           />
+
+          {/* 顶部操作反馈 Toast 浮层 */}
+          {toastMessage && (
+            <div className="md2post-toast" role="alert">
+              <span className="toast-icon">✓</span>
+              <span className="toast-text">{toastMessage}</span>
+            </div>
+          )}
 
           {/* 页面右下角回到顶部快捷悬浮按钮 */}
           <button

@@ -68,23 +68,46 @@ export function svgToPngDataUrl(svgStringOrElement: string | SVGElement): Promis
       svgEl.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
       svgEl.removeAttribute('style');
 
-      // 3. Convert any lingering <foreignObject> to <text> to avoid canvas security tainting
+      // 3. Convert <foreignObject> to SVG <text> with <tspan> to avoid canvas security tainting
       svgEl.querySelectorAll('foreignObject').forEach(fo => {
-        const text = fo.textContent?.trim() || '';
-        if (text) {
+        const html = fo.innerHTML || '';
+        // Extract lines split by <br> or closing block tags
+        const cleanLines = html
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .split('\n')
+          .map(l => l.trim())
+          .filter(Boolean);
+
+        const x = parseFloat(fo.getAttribute('x') || '0');
+        const y = parseFloat(fo.getAttribute('y') || '0');
+        const w = parseFloat(fo.getAttribute('width') || '0');
+        const h = parseFloat(fo.getAttribute('height') || '0');
+        const centerX = x + w / 2;
+        const centerY = y + h / 2;
+
+        if (cleanLines.length > 0) {
           const textNode = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
-          textNode.textContent = text;
           textNode.setAttribute('text-anchor', 'middle');
-          textNode.setAttribute('dominant-baseline', 'central');
-          const x = parseFloat(fo.getAttribute('x') || '0');
-          const y = parseFloat(fo.getAttribute('y') || '0');
-          const w = parseFloat(fo.getAttribute('width') || '0');
-          const h = parseFloat(fo.getAttribute('height') || '0');
-          textNode.setAttribute('x', String(x + w / 2));
-          textNode.setAttribute('y', String(y + h / 2));
           textNode.setAttribute('fill', '#1f2937');
-          textNode.setAttribute('font-size', '13px');
-          textNode.setAttribute('font-family', "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif");
+          textNode.setAttribute('font-size', '13.5px');
+          textNode.setAttribute('font-weight', '500');
+          textNode.setAttribute('font-family', "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif");
+
+          const lineHeight = 19;
+          const totalTextHeight = (cleanLines.length - 1) * lineHeight;
+          const startY = centerY - totalTextHeight / 2;
+
+          cleanLines.forEach((line, idx) => {
+            const tspan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+            tspan.textContent = line;
+            tspan.setAttribute('x', String(centerX));
+            tspan.setAttribute('y', String(Math.round(startY + idx * lineHeight)));
+            tspan.setAttribute('dominant-baseline', 'central');
+            textNode.appendChild(tspan);
+          });
+
           fo.parentNode?.replaceChild(textNode, fo);
         } else {
           fo.remove();

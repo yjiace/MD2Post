@@ -68,6 +68,26 @@ export function createMarkdownParser(options: RenderOptions = {}) {
     typographer: true
   });
 
+  // 0. Heading span plugin (matching mdnice / md.weiyan.cc theme architecture)
+  md.core.ruler.push('heading_span', state => {
+    for (let t = 0; t < state.tokens.length - 1; t++) {
+      if (state.tokens[t].type === 'heading_open' && state.tokens[t + 1].type === 'inline') {
+        const inlineToken = state.tokens[t + 1];
+        if (inlineToken && inlineToken.content) {
+          const prefixToken = new state.Token('html_inline', '', 0);
+          prefixToken.content = '<span class="prefix"></span><span class="content">';
+          inlineToken.children = inlineToken.children || [];
+          inlineToken.children.unshift(prefixToken);
+
+          const suffixToken = new state.Token('html_inline', '', 0);
+          suffixToken.content = '</span><span class="suffix"></span>';
+          inlineToken.children.push(suffixToken);
+          t += 2;
+        }
+      }
+    }
+  });
+
   // Inject data-line attribute for block tokens to enable accurate synchronized scrolling
   const blockRules = [
     'paragraph_open',
@@ -93,14 +113,78 @@ export function createMarkdownParser(options: RenderOptions = {}) {
     };
   });
 
-  // 1. Custom Code Fence renderer (Mermaid + Highlight.js + Mac window + line numbers)
-  md.renderer.rules.fence = (tokens, idx) => {
-    const token = tokens[idx];
-    const info = token.info ? token.info.trim() : '';
-    const lang = info.split(/\s+/)[0].toLowerCase();
-    const rawCode = token.content;
-    const line = token.map && token.map.length >= 1 ? token.map[0] + 1 : '';
-    const lineAttr = line ? ` data-line="${line}"` : '';
+  // Common language alias mapping
+  const LANG_ALIASES: Record<string, string> = {
+    js: 'javascript',
+    ts: 'typescript',
+    jsx: 'javascript',
+    tsx: 'typescript',
+    py: 'python',
+    sh: 'bash',
+    shell: 'bash',
+    zsh: 'bash',
+    yml: 'yaml',
+    golang: 'go',
+    'c++': 'cpp',
+    'c#': 'csharp',
+    cs: 'csharp',
+    html: 'xml',
+    vue: 'xml',
+    svg: 'xml',
+    docker: 'dockerfile',
+    md: 'markdown',
+    text: 'plaintext',
+    txt: 'plaintext',
+    plain: 'plaintext'
+  };
+
+  // Helper to split highlighted HTML into lines while keeping span tags balanced across lines
+  const splitHighlightedLines = (html: string): string[] => {
+    const rawLines = html.split(/\r?\n/);
+    if (rawLines.length > 1 && rawLines[rawLines.length - 1] === '') {
+      rawLines.pop();
+    }
+
+    const lines: string[] = [];
+    const openTags: string[] = [];
+
+    for (let i = 0; i < rawLines.length; i++) {
+      const rawLine = rawLines[i];
+      const prefix = openTags.join('');
+
+      // Find all tags in this line
+      const tagRegex = /<(\/)?([a-zA-Z0-9]+)([^>]*)>/g;
+      let match: RegExpExecArray | null;
+
+      while ((match = tagRegex.exec(rawLine)) !== null) {
+        const isClose = match[1] === '/';
+        const fullTag = match[0];
+        if (isClose) {
+          openTags.pop();
+        } else if (!fullTag.endsWith('/>')) {
+          openTags.push(fullTag);
+        }
+      }
+
+      // Suffix with closing tags for all currently open tags
+      const suffix = openTags
+        .slice()
+        .reverse()
+        .map(t => {
+          const m = t.match(/<([a-zA-Z0-9]+)/);
+          return m ? `</${m[1]}>` : '</span>';
+        })
+        .join('');
+
+      lines.push(prefix + rawLine + suffix);
+    }
+
+    return lines;
+  };
+
+  // Shared code renderer for fenced blocks and indented code blocks
+  const renderCodeBlock = (rawCode: string, rawLang: string, lineAttr: string) => {
+    const lang = (rawLang || '').trim().toLowerCase();
 
     // Check for Mermaid diagram
     if (lang === 'mermaid') {
@@ -108,10 +192,11 @@ export function createMarkdownParser(options: RenderOptions = {}) {
       return `<div class="md2post-mermaid"${lineAttr} data-code="${encodedCode}"><pre class="mermaid">${escapeHtml(rawCode)}</pre></div>\n`;
     }
 
-    // Syntax Highlighting
-    let highlighted = '';
-    const validLang = lang && hljs.getLanguage(lang) ? lang : '';
+    // Resolve language alias
+    const canonicalLang = LANG_ALIASES[lang] || lang;
+    const validLang = canonicalLang && hljs.getLanguage(canonicalLang) ? canonicalLang : '';
 
+    let highlighted = '';
     if (validLang) {
       try {
         highlighted = hljs.highlight(rawCode, { language: validLang, ignoreIllegals: true }).value;
@@ -119,20 +204,29 @@ export function createMarkdownParser(options: RenderOptions = {}) {
         highlighted = escapeHtml(rawCode);
       }
     } else {
-      highlighted = escapeHtml(rawCode);
+      try {
+        const auto = hljs.highlightAuto(rawCode);
+        if (auto && auto.value) {
+          highlighted = auto.value;
+        } else {
+          highlighted = escapeHtml(rawCode);
+        }
+      } catch {
+        highlighted = escapeHtml(rawCode);
+      }
     }
 
     // Format line numbers if enabled
     const showLines = codeSettings?.showLineNumbers ?? true;
     let codeBody = '';
     if (showLines) {
-      const lines = highlighted.split(/\r?\n/);
-      // Remove trailing empty line if code ends with newline
-      if (lines.length > 1 && lines[lines.length - 1] === '') {
-        lines.pop();
-      }
+      const lines = splitHighlightedLines(highlighted);
       codeBody = lines
-        .map((line, i) => `<span class="line"><span class="line-num" data-num="${i + 1}">${i + 1}</span><span class="line-content">${line || ' '}</span></span>`)
+        .map((line, i) => {
+          const textOnly = line.replace(/<[^>]+>/g, '');
+          const safeContent = textOnly.length === 0 ? (line + ' ') : line;
+          return `<span class="line"><span class="line-num" data-num="${i + 1}">${i + 1}</span><span class="line-content">${safeContent}</span></span>`;
+        })
         .join('');
     } else {
       codeBody = highlighted;
@@ -141,17 +235,40 @@ export function createMarkdownParser(options: RenderOptions = {}) {
     const showMac = codeSettings?.showMacButtons ?? true;
     const showBadge = codeSettings?.showLanguageBadge ?? true;
     const wrapLines = codeSettings?.wrapLines ?? false;
+    const displayBadge = lang || (validLang || '');
 
-    const macHeader = showMac || showBadge
+    const macHeader = showMac || (showBadge && displayBadge)
       ? `<div class="code-mac-header">
-          ${showMac ? `<span class="mac-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></span>` : ''}
-          ${showBadge && lang ? `<span class="code-lang">${lang}</span>` : ''}
+          ${showMac ? `<span class="mac-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></span>` : '<span></span>'}
+          ${showBadge && displayBadge ? `<span class="code-lang">${displayBadge}</span>` : ''}
          </div>`
       : '';
 
     const wrapClass = wrapLines ? 'wrap-code' : 'scroll-code';
 
     return `<div class="md2post-code-container ${wrapClass}"${lineAttr}>${macHeader}<pre class="md2post-pre"><code class="hljs ${validLang ? 'language-' + validLang : ''}">${codeBody}</code></pre></div>\n`;
+  };
+
+  // 1. Custom Code Fence renderer (Mermaid + Highlight.js + Mac window + line numbers)
+  md.renderer.rules.fence = (tokens, idx) => {
+    const token = tokens[idx];
+    const info = token.info ? token.info.trim() : '';
+    const lang = info.split(/\s+/)[0];
+    const rawCode = token.content;
+    const line = token.map && token.map.length >= 1 ? token.map[0] + 1 : '';
+    const lineAttr = line ? ` data-line="${line}"` : '';
+
+    return renderCodeBlock(rawCode, lang, lineAttr);
+  };
+
+  // Indented code block renderer (consistent styling with fenced code blocks)
+  md.renderer.rules.code_block = (tokens, idx) => {
+    const token = tokens[idx];
+    const rawCode = token.content;
+    const line = token.map && token.map.length >= 1 ? token.map[0] + 1 : '';
+    const lineAttr = line ? ` data-line="${line}"` : '';
+
+    return renderCodeBlock(rawCode, '', lineAttr);
   };
 
   // 2. Custom Table wrapper for mobile responsiveness

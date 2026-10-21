@@ -151,114 +151,184 @@ body,
 }
 
 /* Floating Platform Copy Dock inside the Right Content Area */
-.platform-floating-dock {
+/* Floating Platform Copy Dock inside the Right Content Area (md.weiyan.cc nice-sidebar style) */
+.nice-sidebar {
+  display: flex;
   position: absolute;
-  right: 18px;
-  top: 32px;
+  top: 20px;
+  right: 15px;
+  flex-direction: column;
+  align-items: center;
   z-index: 50;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 6px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  border-radius: 26px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(226, 232, 240, 0.85);
   user-select: none;
-  transition: all 0.2s ease;
 }
 
-.platform-floating-dock:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.09);
-  background: rgba(255, 255, 255, 0.98);
-}
-
-.dock-button-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  align-items: center;
-}
-
-.floating-dock-btn {
+.nice-dock-item {
   position: relative;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 0;
+  margin-bottom: 8px;
 }
 
-.floating-dock-btn:hover {
-  background: #f1f5f9;
+.nice-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease;
+  position: relative;
+}
+
+.nice-btn:hover {
   transform: scale(1.15);
 }
 
-.floating-dock-btn.active {
-  background: #f0f7ff;
+.nice-btn:active {
+  transform: scale(0.95);
 }
 
-.floating-dock-btn .btn-icon-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease;
+.nice-btn-wechat-icon {
+  padding: 4px;
+  width: 25px;
+  height: 25px;
 }
 
-.copied-overlay {
+.nice-btn-zhihu-icon {
+  padding: 4px;
+  width: 30px;
+  height: 30px;
+}
+
+.nice-btn-juejin-icon {
+  padding: 4px 4px 4px 2px;
+  width: 30px;
+  height: 28px;
+}
+
+.nice-btn-toutiao-icon {
+  padding: 4px;
+  width: 29px;
+  height: 29px;
+  border-radius: 6px;
+}
+
+.nice-btn-markdown-icon {
+  padding: 4px 4px 4px 2px;
+  width: 32px;
+  height: 32px;
+}
+
+.nice-btn-pdf-icon {
+  padding: 5px;
+  width: 30px;
+  height: 30px;
+}
+
+.nice-btn-previewtype-icon {
+  padding: 5px;
+  width: 30px;
+  height: 30px;
+}
+
+.nice-btn-image-icon {
+  padding: 5px;
+  width: 28px;
+  height: 28px;
+}
+
+.dock-check-badge {
   position: absolute;
-  inset: -2px;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #10b981;
+  background: #07c060;
   color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 15px;
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.45);
+  box-shadow: 0 1px 4px rgba(7, 192, 96, 0.4);
   animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes popIn {
+/* Hover flyout tooltip to the left of the dock (weiyan.cc tooltip) */
+.dock-tooltip {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.nice-dock-item:hover .dock-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Toast Message */
+.md2post-toast {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.82);
+  color: #ffffff;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.md2post-toast .toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #07c060;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+@keyframes fadeInDown {
   from {
-    transform: scale(0.6);
     opacity: 0;
+    transform: translate(-50%, -10px);
   }
 
   to {
-    transform: scale(1);
     opacity: 1;
+    transform: translate(-50%, 0);
   }
-}
-
-/* Hover flyout tooltip to the left of the dock */
-.dock-flyout-tooltip {
-  position: absolute;
-  right: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%) translateX(6px);
-  background: #0f172a;
-  color: #ffffff;
-  padding: 6px 10px;
-  border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-  pointer-events: none;
-  opacity: 0;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 100;
 }
 
 .dock-flyout-tooltip::after {
@@ -544,7 +614,7 @@ body,
   overflow-y: auto;
   background: #f8fafc;
   display: block;
-  padding: 20px 24px 260px 24px;
+  padding: 20px 36px 260px 24px;
 }
 
 .preview-pane.mode-desktop .preview-viewport {
@@ -554,7 +624,7 @@ body,
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-subtle);
-  padding: 36px 44px 140px 44px;
+  padding: 36px 36px 140px 36px;
   margin: 0 auto;
   min-height: fit-content;
   height: auto;
@@ -837,20 +907,29 @@ body,
   text-transform: uppercase;
 }
 
+.diagram-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .diagram-export-btn {
-  border: none;
-  background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 3px;
-  padding: 2px 6px;
-  font-size: 10.5px;
-  font-weight: 500;
+  background: #ffffff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
   color: #334155;
   cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.4;
 }
 
 .diagram-export-btn:hover {
   background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .diagram-img-container {
@@ -870,16 +949,168 @@ body,
   border-radius: 4px;
 }
 
-.diagram-svg-container {
-  padding: 12px;
-  display: flex;
-  justify-content: center;
-  overflow-x: auto;
+/* Compact Code Block Line Structure */
+.md2post-code-container .mac-header {
+  padding: 6px 12px;
 }
 
-.diagram-svg-container svg {
+.md2post-pre,
+#nice .md2post-pre,
+#nice pre.md2post-pre {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+}
+
+.md2post-code-container pre code,
+#nice .md2post-code-container pre code,
+#nice pre code {
+  display: block !important;
+  font-family: var(--font-mono);
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+.md2post-code-container .line,
+#nice .md2post-code-container .line,
+#nice .line {
+  display: block !important;
+  min-height: 1.35em !important;
+  line-height: 1.35 !important;
+  white-space: pre !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 13px !important;
+}
+
+.md2post-code-container .line-num,
+#nice .md2post-code-container .line-num,
+#nice .line-num {
+  display: inline-block !important;
+  width: 2.8em !important;
+  min-width: 2.8em !important;
+  margin-right: 0.8em !important;
+  text-align: right !important;
+  user-select: none !important;
+  opacity: 0.45;
+  box-sizing: border-box;
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 1.35 !important;
+}
+
+.md2post-code-container .line-content,
+#nice .md2post-code-container .line-content,
+#nice .line-content {
+  display: inline !important;
+  white-space: pre !important;
+  vertical-align: top;
+  line-height: 1.35 !important;
+}
+
+.md2post-code-container.wrap-code .md2post-pre,
+.md2post-code-container.wrap-code .md2post-pre code,
+.md2post-code-container.wrap-code .line,
+.md2post-code-container.wrap-code .line-content {
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+}
+
+.md2post-code-container.scroll-code .md2post-pre {
+  white-space: pre !important;
+  overflow-x: auto !important;
+}
+
+/* Global Syntax Highlighting Token Styles (Universal fallback) */
+.md2post-code-container .hljs-comment,
+.md2post-code-container .hljs-quote {
+  color: #5c6370 !important;
+  font-style: italic;
+}
+
+.md2post-code-container .hljs-keyword,
+.md2post-code-container .hljs-selector-tag {
+  color: #c678dd !important;
+  font-weight: 600;
+}
+
+.md2post-code-container .hljs-tag,
+.md2post-code-container .hljs-name {
+  color: #e06c75 !important;
+  font-weight: 600;
+}
+
+.md2post-code-container .hljs-attr,
+.md2post-code-container .hljs-attribute {
+  color: #d19a66 !important;
+}
+
+.md2post-code-container .hljs-string,
+.md2post-code-container .hljs-doctag,
+.md2post-code-container .hljs-regexp {
+  color: #98c379 !important;
+}
+
+.md2post-code-container .hljs-title,
+.md2post-code-container .hljs-section,
+.md2post-code-container .hljs-function {
+  color: #61afef !important;
+  font-weight: 600;
+}
+
+.md2post-code-container .hljs-variable,
+.md2post-code-container .hljs-template-variable {
+  color: #e06c75 !important;
+}
+
+.md2post-code-container .hljs-type,
+.md2post-code-container .hljs-class,
+.md2post-code-container .hljs-built_in {
+  color: #e5c07b !important;
+}
+
+.md2post-code-container .hljs-number,
+.md2post-code-container .hljs-literal {
+  color: #d19a66 !important;
+}
+
+.md2post-code-container .hljs-meta,
+.md2post-code-container .hljs-meta-keyword {
+  color: #61afef !important;
+}
+
+.md2post-code-container .hljs-params {
+  color: #abb2bf !important;
+}
+
+/* Diagram Container & Mermaid SVG Isolation */
+.diagram-svg-container,
+#nice .diagram-svg-container {
+  padding: 16px 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  line-height: normal !important;
+  background-color: transparent;
+}
+
+.diagram-svg-container svg,
+#nice .diagram-svg-container svg {
   max-width: 100% !important;
   height: auto !important;
+  display: block;
+  margin: 0 auto;
+}
+
+.diagram-svg-container svg text,
+.diagram-svg-container svg tspan,
+#nice .diagram-svg-container svg text,
+#nice .diagram-svg-container svg tspan {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
 }
 
 .md2post-mermaid-error {

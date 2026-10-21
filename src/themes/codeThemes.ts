@@ -1,354 +1,5 @@
 import type { CodeThemeConfig } from '../types';
 
-export const BUILT_IN_CODE_THEMES: CodeThemeConfig[] = [
-  {
-    id: 'one-dark',
-    name: 'One Dark (深色推荐)',
-    isDark: true,
-    css: `
-      .md2post-code-container {
-        background-color: #282c34;
-        border-radius: 6px;
-        margin: 12px 0;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-        overflow: hidden;
-      }
-      .code-mac-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background-color: #21252b;
-        border-bottom: 1px solid #181a1f;
-      }
-      .mac-dots {
-        display: flex;
-        gap: 5px;
-      }
-      .dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        display: inline-block;
-      }
-      .dot-red { background-color: #ff5f56; }
-      .dot-yellow { background-color: #ffbd2e; }
-      .dot-green { background-color: #27c93f; }
-      .code-lang {
-        font-size: 10.5px;
-        text-transform: uppercase;
-        color: #9da5b4;
-        font-family: monospace;
-        letter-spacing: 0.05em;
-      }
-      .md2post-pre {
-        margin: 0;
-        padding: 10px 12px;
-        overflow-x: auto;
-        background-color: transparent;
-      }
-      .wrap-code .md2post-pre {
-        white-space: pre-wrap;
-        word-break: break-all;
-      }
-      .scroll-code .md2post-pre {
-        white-space: pre;
-      }
-      .hljs {
-        color: #abb2bf;
-        font-family: 'Fira Code', 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .line {
-        display: block;
-        line-height: 1.4;
-      }
-      .line-num {
-        display: inline-block;
-        width: 2em;
-        margin-right: 0.8em;
-        text-align: right;
-        color: #5c6370;
-        user-select: none;
-        line-height: 1.4;
-      }
-      .hljs-comment, .hljs-quote { color: #5c6370; font-style: italic; }
-      .hljs-keyword, .hljs-selector-tag { color: #c678dd; }
-      .hljs-string, .hljs-doctag { color: #98c379; }
-      .hljs-title, .hljs-section, .hljs-selector-id { color: #61afef; }
-      .hljs-variable, .hljs-template-variable { color: #e06c75; }
-      .hljs-type, .hljs-class .hljs-title { color: #e5c07b; }
-      .hljs-number, .hljs-literal { color: #d19a66; }
-      .hljs-function { color: #61afef; }
-    `
-  },
-  {
-    id: 'github-light',
-    name: 'GitHub Light (浅色典雅)',
-    isDark: false,
-    css: `
-      .md2post-code-container {
-        background-color: #f6f8fa;
-        border: 1px solid #d0d7de;
-        border-radius: 6px;
-        margin: 12px 0;
-        overflow: hidden;
-      }
-      .code-mac-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background-color: #eaecf0;
-        border-bottom: 1px solid #d0d7de;
-      }
-      .mac-dots { display: flex; gap: 5px; }
-      .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-      .dot-red { background-color: #ff5f56; }
-      .dot-yellow { background-color: #ffbd2e; }
-      .dot-green { background-color: #27c93f; }
-      .code-lang { font-size: 10.5px; text-transform: uppercase; color: #57606a; font-family: monospace; }
-      .md2post-pre { margin: 0; padding: 10px 12px; overflow-x: auto; background-color: transparent; }
-      .wrap-code .md2post-pre { white-space: pre-wrap; word-break: break-all; }
-      .scroll-code .md2post-pre { white-space: pre; }
-      .hljs {
-        color: #24292f;
-        font-family: 'Fira Code', Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .line { display: block; line-height: 1.4; }
-      .line-num {
-        display: inline-block;
-        width: 2em;
-        margin-right: 0.8em;
-        text-align: right;
-        color: #8c959f;
-        user-select: none;
-        line-height: 1.4;
-      }
-      .hljs-comment, .hljs-quote { color: #6e7781; font-style: italic; }
-      .hljs-keyword, .hljs-selector-tag { color: #cf222e; }
-      .hljs-string, .hljs-doctag { color: #0a3069; }
-      .hljs-title, .hljs-section { color: #8250df; }
-      .hljs-variable { color: #953800; }
-      .hljs-number, .hljs-literal { color: #0550ae; }
-    `
-  },
-  {
-    id: 'vscode-dark',
-    name: 'VS Code Dark+ (深色开发)',
-    isDark: true,
-    css: `
-      .md2post-code-container {
-        background-color: #1e1e1e;
-        border-radius: 6px;
-        margin: 12px 0;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
-      .code-mac-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background-color: #252526;
-        border-bottom: 1px solid #333333;
-      }
-      .mac-dots { display: flex; gap: 5px; }
-      .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-      .dot-red { background-color: #ff5f56; }
-      .dot-yellow { background-color: #ffbd2e; }
-      .dot-green { background-color: #27c93f; }
-      .code-lang { font-size: 10.5px; text-transform: uppercase; color: #858585; font-family: monospace; }
-      .md2post-pre { margin: 0; padding: 10px 12px; overflow-x: auto; background-color: transparent; }
-      .wrap-code .md2post-pre { white-space: pre-wrap; word-break: break-all; }
-      .scroll-code .md2post-pre { white-space: pre; }
-      .hljs {
-        color: #d4d4d4;
-        font-family: 'Fira Code', Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .line { display: block; line-height: 1.4; }
-      .line-num {
-        display: inline-block;
-        width: 2em;
-        margin-right: 0.8em;
-        text-align: right;
-        color: #858585;
-        user-select: none;
-        line-height: 1.4;
-      }
-      .hljs-comment { color: #6a9955; font-style: italic; }
-      .hljs-keyword { color: #569cd6; }
-      .hljs-string { color: #ce9178; }
-      .hljs-number { color: #b5cea8; }
-      .hljs-title { color: #dcdcaa; }
-      .hljs-type { color: #4ec9b0; }
-    `
-  },
-  {
-    id: 'dracula',
-    name: 'Dracula (吸血鬼高反差)',
-    isDark: true,
-    css: `
-      .md2post-code-container {
-        background-color: #282a36;
-        border-radius: 6px;
-        margin: 12px 0;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
-      .code-mac-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background-color: #21222c;
-        border-bottom: 1px solid #191a21;
-      }
-      .mac-dots { display: flex; gap: 5px; }
-      .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-      .dot-red { background-color: #ff5555; }
-      .dot-yellow { background-color: #f1fa8c; }
-      .dot-green { background-color: #50fa7b; }
-      .code-lang { font-size: 10.5px; text-transform: uppercase; color: #6272a4; font-family: monospace; }
-      .md2post-pre { margin: 0; padding: 10px 12px; overflow-x: auto; background-color: transparent; }
-      .wrap-code .md2post-pre { white-space: pre-wrap; word-break: break-all; }
-      .scroll-code .md2post-pre { white-space: pre; }
-      .hljs {
-        color: #f8f8f2;
-        font-family: 'Fira Code', Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .line { display: block; line-height: 1.4; }
-      .line-num {
-        display: inline-block;
-        width: 2em;
-        margin-right: 0.8em;
-        text-align: right;
-        color: #6272a4;
-        user-select: none;
-        line-height: 1.4;
-      }
-      .hljs-comment { color: #6272a4; }
-      .hljs-keyword { color: #ff79c6; }
-      .hljs-string { color: #f1fa8c; }
-      .hljs-number { color: #bd93f9; }
-      .hljs-title { color: #50fa7b; }
-      .hljs-type { color: #8be9fd; }
-    `
-  },
-  {
-    id: 'solarized-light',
-    name: 'Solarized Light (经典护眼浅色)',
-    isDark: false,
-    css: `
-      .md2post-code-container {
-        background-color: #fdf6e3;
-        border: 1px solid #eee8d5;
-        border-radius: 6px;
-        margin: 12px 0;
-        overflow: hidden;
-      }
-      .code-mac-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background-color: #eee8d5;
-        border-bottom: 1px solid #e0dacf;
-      }
-      .mac-dots { display: flex; gap: 5px; }
-      .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-      .dot-red { background-color: #dc322f; }
-      .dot-yellow { background-color: #b58900; }
-      .dot-green { background-color: #859900; }
-      .code-lang { font-size: 10.5px; text-transform: uppercase; color: #93a1a1; font-family: monospace; }
-      .md2post-pre { margin: 0; padding: 10px 12px; overflow-x: auto; background-color: transparent; }
-      .wrap-code .md2post-pre { white-space: pre-wrap; word-break: break-all; }
-      .scroll-code .md2post-pre { white-space: pre; }
-      .hljs {
-        color: #657b83;
-        font-family: 'Fira Code', Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .line { display: block; line-height: 1.4; }
-      .line-num {
-        display: inline-block;
-        width: 2em;
-        margin-right: 0.8em;
-        text-align: right;
-        color: #93a1a1;
-        user-select: none;
-        line-height: 1.4;
-      }
-      .hljs-comment { color: #93a1a1; font-style: italic; }
-      .hljs-keyword { color: #859900; }
-      .hljs-string { color: #2aa198; }
-      .hljs-number { color: #d33682; }
-      .hljs-title { color: #268bd2; }
-    `
-  },
-  {
-    id: 'monokai',
-    name: 'Monokai Pro (复古极客)',
-    isDark: true,
-    css: `
-      .md2post-code-container {
-        background-color: #272822;
-        border-radius: 6px;
-        margin: 12px 0;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
-      .code-mac-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background-color: #1e1f1c;
-        border-bottom: 1px solid #141412;
-      }
-      .mac-dots { display: flex; gap: 5px; }
-      .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-      .dot-red { background-color: #f92672; }
-      .dot-yellow { background-color: #e6db74; }
-      .dot-green { background-color: #a6e22e; }
-      .code-lang { font-size: 10.5px; text-transform: uppercase; color: #75715e; font-family: monospace; }
-      .md2post-pre { margin: 0; padding: 10px 12px; overflow-x: auto; background-color: transparent; }
-      .wrap-code .md2post-pre { white-space: pre-wrap; word-break: break-all; }
-      .scroll-code .md2post-pre { white-space: pre; }
-      .hljs {
-        color: #f8f8f2;
-        font-family: 'Fira Code', Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .line { display: block; line-height: 1.4; }
-      .line-num {
-        display: inline-block;
-        width: 2em;
-        margin-right: 0.8em;
-        text-align: right;
-        color: #75715e;
-        user-select: none;
-        line-height: 1.4;
-      }
-      .hljs-comment { color: #75715e; }
-      .hljs-keyword { color: #f92672; }
-      .hljs-string { color: #e6db74; }
-      .hljs-number { color: #ae81ff; }
-      .hljs-title { color: #a6e22e; }
-      .hljs-type { color: #66d9ef; }
-    `
-  }
-];
-
 export interface CodeThemeInlinePalette {
   containerBg: string;
   preBg: string;
@@ -558,10 +209,150 @@ export const CODE_THEME_PALETTES: Record<string, CodeThemeInlinePalette> = {
   }
 };
 
+function buildThemeCss(palette: CodeThemeInlinePalette, isDark: boolean): string {
+  const t = palette.tokens;
+  return `
+    #nice .md2post-code-container,
+    .md2post-code-container {
+      background-color: ${palette.containerBg} !important;
+      border-radius: 6px;
+      margin: 12px 0;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, ${isDark ? '0.2' : '0.08'});
+    }
+    #nice .code-mac-header,
+    .code-mac-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background-color: ${palette.macHeaderBg} !important;
+      border-bottom: 1px solid ${palette.macHeaderBorder} !important;
+    }
+    #nice .mac-dots, .mac-dots { display: flex; gap: 5px; }
+    #nice .dot, .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    #nice .dot-red, .dot-red { background-color: #ff5f56; }
+    #nice .dot-yellow, .dot-yellow { background-color: #ffbd2e; }
+    #nice .dot-green, .dot-green { background-color: #27c93f; }
+    #nice .code-lang,
+    .code-lang {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      color: ${isDark ? '#9da5b4' : '#57606a'};
+      font-family: monospace;
+      letter-spacing: 0.05em;
+    }
+    #nice .md2post-pre,
+    .md2post-pre {
+      margin: 0 !important;
+      padding: 8px 12px !important;
+      overflow-x: auto;
+      background-color: ${palette.preBg} !important;
+    }
+    #nice .wrap-code .md2post-pre,
+    .wrap-code .md2post-pre {
+      white-space: pre-wrap !important;
+      word-break: break-all !important;
+    }
+    #nice .scroll-code .md2post-pre,
+    .scroll-code .md2post-pre {
+      white-space: pre !important;
+    }
+    #nice .hljs,
+    .hljs {
+      color: ${palette.textColor} !important;
+      font-family: 'Fira Code', 'JetBrains Mono', Consolas, Monaco, monospace !important;
+      font-size: 13px !important;
+      line-height: 1.35 !important;
+      background-color: transparent !important;
+    }
+    #nice .line,
+    .line {
+      display: block !important;
+      min-height: 1.35em !important;
+      line-height: 1.35 !important;
+      white-space: pre !important;
+      font-size: 13px !important;
+    }
+    #nice .line-num,
+    .line-num {
+      display: inline-block !important;
+      width: 2.8em !important;
+      min-width: 2.8em !important;
+      margin-right: 0.8em !important;
+      text-align: right !important;
+      color: ${palette.lineNumColor} !important;
+      user-select: none !important;
+      line-height: 1.35 !important;
+      font-size: 12px;
+      opacity: 0.55;
+    }
+    #nice .line-content,
+    .line-content {
+      display: inline !important;
+      white-space: pre !important;
+      line-height: 1.35 !important;
+    }
+
+    /* Complete Syntax Highlighting Tokens */
+    #nice .hljs-comment, .hljs-comment, #nice .hljs-quote, .hljs-quote { color: ${t.comment || '#5c6370'} !important; font-style: italic; }
+    #nice .hljs-keyword, .hljs-keyword, #nice .hljs-selector-tag, .hljs-selector-tag, #nice .hljs-subst, .hljs-subst { color: ${t.keyword || '#c678dd'} !important; font-weight: 600; }
+    #nice .hljs-tag, .hljs-tag, #nice .hljs-name, .hljs-name { color: ${t.name || t.tag || t.keyword || '#e06c75'} !important; font-weight: 600; }
+    #nice .hljs-attr, .hljs-attr, #nice .hljs-attribute, .hljs-attribute { color: ${t.attr || t.attribute || '#d19a66'} !important; }
+    #nice .hljs-string, .hljs-string, #nice .hljs-doctag, .hljs-doctag, #nice .hljs-regexp, .hljs-regexp, #nice .hljs-meta-string, .hljs-meta-string { color: ${t.string || '#98c379'} !important; }
+    #nice .hljs-title, .hljs-title, #nice .hljs-section, .hljs-section, #nice .hljs-selector-id, .hljs-selector-id, #nice .hljs-function, .hljs-function { color: ${t.title || '#61afef'} !important; font-weight: 600; }
+    #nice .hljs-variable, .hljs-variable, #nice .hljs-template-variable, .hljs-template-variable { color: ${t.variable || '#e06c75'} !important; }
+    #nice .hljs-type, .hljs-type, #nice .hljs-class, .hljs-class, #nice .hljs-built_in, .hljs-built_in, #nice .hljs-builtin-name, .hljs-builtin-name { color: ${t.type || t.built_in || '#e5c07b'} !important; }
+    #nice .hljs-number, .hljs-number, #nice .hljs-literal, .hljs-literal { color: ${t.number || t.literal || '#d19a66'} !important; }
+    #nice .hljs-meta, .hljs-meta, #nice .hljs-meta-keyword, .hljs-meta-keyword { color: ${t.meta || '#61afef'} !important; }
+    #nice .hljs-params, .hljs-params { color: ${t.params || palette.textColor} !important; }
+    #nice .hljs-symbol, .hljs-symbol, #nice .hljs-bullet, .hljs-bullet, #nice .hljs-link, .hljs-link { color: ${t.keyword || '#56b6c2'} !important; }
+    #nice .hljs-punctuation, .hljs-punctuation { color: ${palette.textColor} !important; }
+  `;
+}
+
+export const BUILT_IN_CODE_THEMES: CodeThemeConfig[] = [
+  {
+    id: 'one-dark',
+    name: 'One Dark (深色推荐)',
+    isDark: true,
+    css: buildThemeCss(CODE_THEME_PALETTES['one-dark'], true)
+  },
+  {
+    id: 'github-light',
+    name: 'GitHub Light (浅色典雅)',
+    isDark: false,
+    css: buildThemeCss(CODE_THEME_PALETTES['github-light'], false)
+  },
+  {
+    id: 'vscode-dark',
+    name: 'VS Code Dark+ (深色开发)',
+    isDark: true,
+    css: buildThemeCss(CODE_THEME_PALETTES['vscode-dark'], true)
+  },
+  {
+    id: 'dracula',
+    name: 'Dracula (吸血鬼高反差)',
+    isDark: true,
+    css: buildThemeCss(CODE_THEME_PALETTES['dracula'], true)
+  },
+  {
+    id: 'solarized-light',
+    name: 'Solarized Light (经典护眼浅色)',
+    isDark: false,
+    css: buildThemeCss(CODE_THEME_PALETTES['solarized-light'], false)
+  },
+  {
+    id: 'monokai',
+    name: 'Monokai Pro (复古极客)',
+    isDark: true,
+    css: buildThemeCss(CODE_THEME_PALETTES['monokai'], true)
+  }
+];
+
 export function getCodeThemeInlinePalette(themeId?: string): CodeThemeInlinePalette {
   if (themeId && CODE_THEME_PALETTES[themeId]) {
     return CODE_THEME_PALETTES[themeId];
   }
   return CODE_THEME_PALETTES['one-dark'];
 }
-

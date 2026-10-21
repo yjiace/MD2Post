@@ -1,6 +1,8 @@
 import type { ThemeConfig } from '../types';
 import { getCodeThemeInlinePalette } from '../themes/codeThemes';
 import { svgToPngDataUrl } from '../utils/svgRasterizer';
+import juice from 'juice/client';
+import { WEIYAN_BASIC_CSS } from '../themes/weiyanThemes';
 
 export interface InlineOptions {
   theme: ThemeConfig;
@@ -531,6 +533,32 @@ export async function transformToInlinedHtml(
     }
   });
 
+  // 11.2 Inline Syntax Highlighting Token Colors
+  // Crucial: WeChat / Toutiao / Zhihu strip <style> blocks and CSS class names upon pasting,
+  // so every single .hljs-* token must be explicitly inlined with its theme palette color!
+  const tokenMap = codePalette.tokens as Record<string, string>;
+  clone.querySelectorAll('.md2post-code-container').forEach(container => {
+    container.querySelectorAll<HTMLElement>('[class*="hljs-"]').forEach(span => {
+      const classNames = span.className.split(/\s+/);
+      for (const cls of classNames) {
+        if (cls.startsWith('hljs-')) {
+          const tokenKey = cls.replace('hljs-', '');
+          const color = tokenMap[tokenKey];
+          if (color) {
+            const isBold = ['keyword', 'title', 'selector-tag', 'section', 'tag', 'name'].includes(tokenKey);
+            const isItalic = ['comment', 'quote'].includes(tokenKey);
+            const existingStyle = span.getAttribute('style') || '';
+            span.setAttribute(
+              'style',
+              `${existingStyle} color: ${color} !important; ${isBold ? 'font-weight: 600;' : ''} ${isItalic ? 'font-style: italic;' : ''}`
+            );
+            break;
+          }
+        }
+      }
+    });
+  });
+
   // 11.3 Platform-Specific Code Container Architecture:
   if (isZhihu) {
     // Zhihu: MUST use clean native <pre><code class="language-..."> without extra <section> wrappers or line numbers
@@ -613,18 +641,18 @@ export async function transformToInlinedHtml(
     clone.querySelectorAll('code.hljs').forEach(codeEl => {
       codeEl.setAttribute(
         'style',
-        `font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.45; color: ${codePalette.textColor}; background-color: transparent; white-space: pre !important;`
+        `display: block !important; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.45; color: ${codePalette.textColor}; background-color: transparent; white-space: pre !important;`
       );
     });
 
     clone.querySelectorAll('.line').forEach(line => {
-      line.setAttribute('style', 'display: block; line-height: 1.45; min-height: 1.45em; white-space: pre !important; margin: 0; padding: 0;');
+      line.setAttribute('style', 'display: block !important; line-height: 1.45; min-height: 1.45em; white-space: pre !important; margin: 0; padding: 0;');
     });
 
     clone.querySelectorAll('.line-num').forEach(num => {
       num.setAttribute(
         'style',
-        `display: inline-block; width: 2.5em; margin-right: 0.8em; text-align: right; color: ${codePalette.lineNumColor}; user-select: none; line-height: 1.45; font-size: 12px;`
+        `display: inline-block !important; width: 2.5em; margin-right: 0.8em; text-align: right; color: ${codePalette.lineNumColor}; user-select: none; line-height: 1.45; font-size: 12px;`
       );
     });
   } else {
@@ -641,13 +669,13 @@ export async function transformToInlinedHtml(
     });
 
     clone.querySelectorAll('.line').forEach(line => {
-      line.setAttribute('style', 'display: block; line-height: 1.45;');
+      line.setAttribute('style', 'display: block !important; line-height: 1.45;');
     });
 
     clone.querySelectorAll('.line-num').forEach(num => {
       num.setAttribute(
         'style',
-        `display: inline-block; width: 2.4em; margin-right: 0.8em; text-align: right; color: ${codePalette.lineNumColor}; font-size: 12px;`
+        `display: inline-block !important; width: 2.4em; margin-right: 0.8em; text-align: right; color: ${codePalette.lineNumColor}; font-size: 12px;`
       );
     });
   }
@@ -681,17 +709,63 @@ export async function transformToInlinedHtml(
     }
   }
 
-  // 16. Wrap in Platform-Specific Root Container:
-  // WeChat: <section class="md2post-wechat-wrapper">
-  // Toutiao, Zhihu, Universal: <div class="md2post-wrapper"> (Zhihu & Toutiao strip <section> tags)
+  // 16. Wrap in Platform-Specific Root Container and apply Weiyan Theme Juice inlining with Placeholder Protection
+  // We temporarily extract code blocks and diagrams into slots to prevent Weiyan global CSS and Juice from overwriting code themes
+  const protectedSlots: string[] = [];
+
+  // Protect diagrams (PNG images)
+  clone.querySelectorAll('.md2post-diagram-section').forEach(diag => {
+    const slotId = protectedSlots.length;
+    protectedSlots.push(diag.outerHTML);
+    const placeholder = document.createElement('div');
+    placeholder.setAttribute('data-md2post-slot', String(slotId));
+    diag.parentNode?.replaceChild(placeholder, diag);
+  });
+
+  // Protect transformed code blocks
+  clone.querySelectorAll('.md2post-code-section, .md2post-code-container, pre.md2post-pre').forEach(codeBlock => {
+    const slotId = protectedSlots.length;
+    protectedSlots.push(codeBlock.outerHTML);
+    const placeholder = document.createElement('div');
+    placeholder.setAttribute('data-md2post-slot', String(slotId));
+    codeBlock.parentNode?.replaceChild(placeholder, codeBlock);
+  });
+
+  let processedHtml = clone.innerHTML;
+  if (isWechat || isZhihu) {
+    try {
+      const fullCss = `${WEIYAN_BASIC_CSS}\n${theme.customCss || ''}`;
+      const wrappedHtml = `<div id="nice">${processedHtml}</div>`;
+      const inlined = juice.inlineContent(wrappedHtml, fullCss, {
+        inlinePseudoElements: true,
+        preserveImportant: true
+      });
+      const match = inlined.match(/<div id="nice"[^>]*>([\s\S]*)<\/div>/i);
+      if (match) {
+        processedHtml = match[1];
+      } else {
+        processedHtml = inlined;
+      }
+    } catch (e) {
+      console.warn('Juice inlining fallback:', e);
+    }
+  }
+
+  // Restore protected slots (code blocks & diagrams) with exact styles intact
+  processedHtml = processedHtml.replace(/<div data-md2post-slot="(\d+)"[^>]*><\/div>/g, (_match, id) => {
+    const idx = parseInt(id, 10);
+    return protectedSlots[idx] || '';
+  });
+
   const rootTag = isWechat ? 'section' : 'div';
   const wrapper = document.createElement(rootTag);
+  wrapper.id = 'nice';
   wrapper.className = isToutiao ? 'md2post-toutiao-wrapper' : isZhihu ? 'md2post-zhihu-wrapper' : `md2post-${platform}-wrapper`;
   wrapper.setAttribute(
     'style',
     `font-family: ${theme.fontFamily}; font-size: ${theme.fontSize}px; line-height: ${theme.lineHeight}; color: ${theme.textColor}; background-color: #ffffff; letter-spacing: 0.02em; word-break: break-word;`
   );
-  wrapper.innerHTML = clone.innerHTML;
+  wrapper.innerHTML = processedHtml;
 
   return {
     inlinedHtml: wrapper.outerHTML,

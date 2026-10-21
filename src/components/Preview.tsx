@@ -28,10 +28,13 @@ export const Preview: React.FC<PreviewProps> = ({
         startOnLoad: false,
         theme: 'default',
         securityLevel: 'loose',
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        htmlLabels: false, // Critical: pure SVG <text> instead of <foreignObject> prevents styling cascade pollution and ensures 100% canvas rasterization success
+        fontSize: 13,
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
         flowchart: {
-          htmlLabels: false, // Critical: generate pure SVG <text> instead of <foreignObject> so canvas rasterization succeeds
-          useMaxWidth: false
+          htmlLabels: false,
+          useMaxWidth: false,
+          curve: 'basis'
         },
         sequence: {
           useMaxWidth: false
@@ -42,7 +45,8 @@ export const Preview: React.FC<PreviewProps> = ({
           primaryBorderColor: primaryColor,
           lineColor: '#64748b',
           secondaryColor: '#f1f5f9',
-          tertiaryColor: '#ffffff'
+          tertiaryColor: '#ffffff',
+          fontSize: '13px'
         }
       });
     } catch (e) {
@@ -80,18 +84,26 @@ export const Preview: React.FC<PreviewProps> = ({
       mermaid
         .render(uniqueId, rawCode)
         .then(async ({ svg }) => {
-          const pngDataUrl = await svgToPngDataUrl(svg);
+          // Clean SVG root for fluid responsive display without breaking geometric coordinates
+          const processedSvg = cleanMermaidSvg(svg);
+
+          const pngDataUrl = await svgToPngDataUrl(processedSvg);
           block.setAttribute('data-rendered', 'true');
           block.innerHTML = `
             <div class="mermaid-diagram-wrap" data-png-url="${pngDataUrl || ''}">
               <div class="diagram-toolbar">
                 <span class="diagram-label">Mermaid 流程图</span>
-                <button class="diagram-export-btn" onclick="window.__downloadMermaidSvg && window.__downloadMermaidSvg('${uniqueId}')" title="下载高清 SVG 矢量图">
-                  下载 SVG
-                </button>
+                <div class="diagram-actions">
+                  <button class="diagram-export-btn" onclick="window.__downloadMermaidSvg && window.__downloadMermaidSvg('${uniqueId}')" title="下载 SVG 矢量图">
+                    SVG
+                  </button>
+                  <button class="diagram-export-btn" onclick="window.__downloadMermaidPng && window.__downloadMermaidPng('${uniqueId}')" title="下载 PNG 图片">
+                    PNG
+                  </button>
+                </div>
               </div>
               <div class="diagram-svg-container" id="${uniqueId}-container">
-                ${svg}
+                ${processedSvg}
               </div>
               ${pngDataUrl ? `<img class="mermaid-img" src="${pngDataUrl}" alt="流程图" style="display:none;" />` : ''}
             </div>
@@ -122,6 +134,28 @@ export const Preview: React.FC<PreviewProps> = ({
         a.download = `mermaid-${id}.svg`;
         a.click();
         URL.revokeObjectURL(url);
+      }
+    };
+
+    // Provide global png download function
+    (window as any).__downloadMermaidPng = async (id: string) => {
+      const container = document.getElementById(`${id}-container`);
+      const wrap = container?.closest('.mermaid-diagram-wrap') as HTMLElement;
+      let pngUrl = wrap?.getAttribute('data-png-url');
+
+      if (!pngUrl) {
+        const svgEl = container?.querySelector('svg');
+        if (svgEl) {
+          const svgContent = new XMLSerializer().serializeToString(svgEl);
+          pngUrl = await svgToPngDataUrl(svgContent);
+        }
+      }
+
+      if (pngUrl) {
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = `mermaid-${id}.png`;
+        a.click();
       }
     };
   }, [htmlContent, primaryColor]);
@@ -165,7 +199,7 @@ export const Preview: React.FC<PreviewProps> = ({
   const renderedBody = (
     <div className="md2post-rendered-content" ref={contentRef}>
       {/* Rendered HTML */}
-      <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+      <div id="nice" dangerouslySetInnerHTML={{ __html: htmlContent }} />
     </div>
   );
 
@@ -219,6 +253,26 @@ export const Preview: React.FC<PreviewProps> = ({
     </div>
   );
 };
+
+function cleanMermaidSvg(rawSvg: string): string {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawSvg, 'image/svg+xml');
+    const svgEl = doc.querySelector('svg');
+    if (!svgEl) return rawSvg;
+
+    // Fluid SVG styling without mutating inner geometric nodes/coordinates
+    svgEl.setAttribute(
+      'style',
+      'max-width: 100%; height: auto; display: block; margin: 0 auto;'
+    );
+
+    return new XMLSerializer().serializeToString(doc);
+  } catch (e) {
+    console.warn('cleanMermaidSvg warning:', e);
+    return rawSvg;
+  }
+}
 
 function escapeHtml(str: string): string {
   return str
