@@ -34,7 +34,11 @@ export const Preview: React.FC<PreviewProps> = ({
         flowchart: {
           htmlLabels: false,
           useMaxWidth: false,
-          curve: 'basis'
+          curve: 'linear',
+          subGraphTitleMargin: {
+            top: 18,
+            bottom: 12
+          }
         },
         sequence: {
           useMaxWidth: false
@@ -44,6 +48,8 @@ export const Preview: React.FC<PreviewProps> = ({
           primaryTextColor: '#1f2937',
           primaryBorderColor: primaryColor,
           lineColor: '#64748b',
+          edgeColor: '#64748b',
+          arrowheadColor: '#64748b',
           secondaryColor: '#f1f5f9',
           tertiaryColor: '#ffffff',
           fontSize: '13px'
@@ -266,6 +272,25 @@ function cleanMermaidSvg(rawSvg: string): string {
       'style',
       'max-width: 100%; height: auto; display: block; margin: 0 auto;'
     );
+
+    // Ensure subgraph cluster titles have comfortable padding from the top border
+    const clusters = doc.querySelectorAll('.cluster');
+    clusters.forEach(cluster => {
+      const rect = cluster.querySelector('rect');
+      const label = cluster.querySelector('.cluster-label');
+      if (rect && label) {
+        const rectY = parseFloat(rect.getAttribute('y') || '0');
+        const transform = label.getAttribute('transform') || '';
+        const match = transform.match(/translate\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)/);
+        if (match) {
+          const x = parseFloat(match[1]);
+          const y = parseFloat(match[2]);
+          if (y - rectY < 14) {
+            label.setAttribute('transform', `translate(${x}, ${rectY + 18})`);
+          }
+        }
+      }
+    });
 
     return new XMLSerializer().serializeToString(doc);
   } catch (e) {

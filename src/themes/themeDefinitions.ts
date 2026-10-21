@@ -77,14 +77,33 @@ ${themeCss}
 #nice .callout-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-weight: 600;
   margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+#nice .callout-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 #nice .callout-content p {
-  margin: 0 !important;
+  margin: 0 0 6px 0 !important;
   padding: 0 !important;
+}
+
+#nice .callout-content p:last-child {
+  margin-bottom: 0 !important;
 }
 
 #nice .md2post-code-container {
@@ -92,6 +111,8 @@ ${themeCss}
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
 }
 
 #nice .code-mac-header,
@@ -131,12 +152,14 @@ ${themeCss}
 
 #nice pre.md2post-pre {
   margin: 0 !important;
-  padding: 8px 12px !important;
+  padding: 8px 10px !important;
   overflow-x: auto;
   background-color: transparent !important;
-  font-family: 'Fira Code', 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.35 !important;
+  font-family: 'Fira Code', 'JetBrains Mono', Menlo, Monaco, Consolas, monospace !important;
+  font-size: 12.5px !important;
+  line-height: 1.48 !important;
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
 }
 
 #nice .md2post-code-container pre code,
@@ -144,8 +167,10 @@ ${themeCss}
 #nice pre code {
   display: block !important;
   font-family: 'Fira Code', 'JetBrains Mono', Menlo, Monaco, Consolas, monospace !important;
-  font-size: 13px !important;
-  line-height: 1.35 !important;
+  font-size: 12.5px !important;
+  line-height: 1.48 !important;
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
   background-color: transparent !important;
   border-radius: 0;
   padding: 0;
@@ -153,35 +178,40 @@ ${themeCss}
 
 #nice .md2post-code-container .line,
 #nice .line {
-  display: block !important;
-  min-height: 1.35em !important;
-  line-height: 1.35 !important;
-  white-space: pre !important;
+  display: flex !important;
+  align-items: flex-start;
+  min-height: 1.48em !important;
+  line-height: 1.48 !important;
   margin: 0 !important;
   padding: 0 !important;
-  font-size: 13px !important;
+  font-size: 12.5px !important;
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
+  box-sizing: border-box !important;
 }
 
 #nice .md2post-code-container .line-num,
 #nice .line-num {
-  display: inline-block !important;
-  width: 2.8em !important;
-  min-width: 2.8em !important;
-  margin-right: 0.8em !important;
+  flex-shrink: 0 !important;
+  width: 1.9em !important;
+  min-width: 1.9em !important;
+  margin-right: 0.45em !important;
   text-align: right !important;
   user-select: none !important;
-  opacity: 0.45;
+  opacity: 0.5;
   box-sizing: border-box;
-  vertical-align: top;
-  font-size: 12px;
-  line-height: 1.35 !important;
+  font-size: 11.5px !important;
+  line-height: 1.48 !important;
+  letter-spacing: 0 !important;
 }
 
 #nice .md2post-code-container .line-content,
 #nice .line-content {
-  display: inline !important;
-  white-space: pre !important;
-  vertical-align: top;
+  flex: 1 !important;
+  min-width: 0 !important;
+  line-height: 1.48 !important;
+  font-size: 12.5px !important;
+  letter-spacing: 0 !important;
 }
 
 #nice .wrap-code pre.md2post-pre,
@@ -232,6 +262,20 @@ ${themeCss}
   letter-spacing: normal !important;
   word-spacing: normal !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif !important;
+}
+
+#nice .diagram-svg-container svg .edgePath .path,
+#nice .diagram-svg-container svg .flowchart-link,
+#nice .diagram-svg-container svg path.edge {
+  stroke-width: 1.5px !important;
+  stroke: #64748b !important;
+  visibility: visible !important;
+}
+
+#nice .diagram-svg-container svg .marker,
+#nice .diagram-svg-container svg marker path {
+  fill: #64748b !important;
+  stroke: #64748b !important;
 }
 
 #nice .md2post-table-wrapper {

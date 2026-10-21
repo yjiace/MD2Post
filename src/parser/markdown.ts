@@ -19,7 +19,7 @@ export const CALLOUT_CONFIG: Record<
     color: '#0969da',
     bgColor: '#f0f7ff',
     borderColor: '#0969da',
-    icon: 'ℹ️'
+    icon: 'ℹ'
   },
   tip: {
     type: 'tip',
@@ -35,7 +35,7 @@ export const CALLOUT_CONFIG: Record<
     color: '#8250df',
     bgColor: '#fbf0ff',
     borderColor: '#8250df',
-    icon: '❗️'
+    icon: '!'
   },
   warning: {
     type: 'warning',
@@ -43,7 +43,7 @@ export const CALLOUT_CONFIG: Record<
     color: '#bf8700',
     bgColor: '#fff8ea',
     borderColor: '#bf8700',
-    icon: '⚠️'
+    icon: '!'
   },
   caution: {
     type: 'caution',
@@ -51,7 +51,7 @@ export const CALLOUT_CONFIG: Record<
     color: '#cf222e',
     bgColor: '#fff0f0',
     borderColor: '#cf222e',
-    icon: '🛑'
+    icon: '✕'
   }
 };
 
@@ -88,7 +88,58 @@ export function createMarkdownParser(options: RenderOptions = {}) {
     }
   });
 
-  // Inject data-line attribute for block tokens to enable accurate synchronized scrolling
+  // 0.1 Callout pre-processor (properly cleans leading markers, newlines, and prevents empty paragraphs)
+  md.core.ruler.push('callout_processor', state => {
+    const tokens = state.tokens;
+    for (let idx = 0; idx < tokens.length; idx++) {
+      if (tokens[idx].type === 'blockquote_open') {
+        for (let i = idx + 1; i < tokens.length; i++) {
+          if (tokens[i].type === 'blockquote_close') break;
+          if (tokens[i].type === 'paragraph_open') {
+            const inlineToken = tokens[i + 1];
+            if (inlineToken && inlineToken.type === 'inline' && inlineToken.content) {
+              const match = inlineToken.content.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
+              if (match) {
+                const calloutType = match[1].toLowerCase();
+                (tokens[idx] as any).__calloutType = calloutType;
+
+                // Remove the [!TYPE] marker and leading whitespace
+                inlineToken.content = inlineToken.content
+                  .replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\n?/i, '')
+                  .trimStart();
+
+                if (inlineToken.children && inlineToken.children.length > 0) {
+                  if (inlineToken.children[0].type === 'text') {
+                    inlineToken.children[0].content = inlineToken.children[0].content
+                      .replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\n?/i, '')
+                      .trimStart();
+                    if (!inlineToken.children[0].content) {
+                      inlineToken.children.shift();
+                    }
+                  }
+                  // Remove any immediately following softbreak, hardbreak (<br>), or whitespace tokens
+                  while (
+                    inlineToken.children.length > 0 &&
+                    (inlineToken.children[0].type === 'softbreak' ||
+                      inlineToken.children[0].type === 'hardbreak' ||
+                      (inlineToken.children[0].type === 'text' && !inlineToken.children[0].content.trim()))
+                  ) {
+                    inlineToken.children.shift();
+                  }
+                }
+
+                // If the first paragraph only contained [!TYPE] marker, remove the whole empty paragraph
+                if (!inlineToken.content.trim() && inlineToken.children.length === 0) {
+                  tokens.splice(i, 3);
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+  });
   const blockRules = [
     'paragraph_open',
     'heading_open',
@@ -327,39 +378,12 @@ export function createMarkdownParser(options: RenderOptions = {}) {
     const line = tokens[idx].map && tokens[idx].map!.length >= 1 ? tokens[idx].map![0] + 1 : '';
     const lineAttr = line ? ` data-line="${line}"` : '';
 
-    // Check if the next token contains callout marker [!NOTE], [!TIP], etc.
-    let isCallout = false;
-    let calloutType = '';
-
-    for (let i = idx + 1; i < tokens.length; i++) {
-      if (tokens[i].type === 'blockquote_close') break;
-      if (tokens[i].type === 'paragraph_open') {
-        const inlineToken = tokens[i + 1];
-        if (inlineToken && inlineToken.type === 'inline' && inlineToken.content) {
-          const match = inlineToken.content.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
-          if (match) {
-            isCallout = true;
-            calloutType = match[1].toLowerCase();
-            // Remove the [!TYPE] marker and any trailing line break or space
-            inlineToken.content = inlineToken.content.replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\n?/i, '').trimStart();
-            if (inlineToken.children && inlineToken.children.length > 0) {
-              const firstChild = inlineToken.children[0];
-              if (firstChild && firstChild.type === 'text') {
-                firstChild.content = firstChild.content.replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\n?/i, '').trimStart();
-              }
-            }
-          }
-        }
-        break;
-      }
-    }
-
-    if (isCallout && CALLOUT_CONFIG[calloutType]) {
+    const calloutType = (tokens[idx] as any).__calloutType;
+    if (calloutType && CALLOUT_CONFIG[calloutType]) {
       const config = CALLOUT_CONFIG[calloutType];
-      (tokens[idx] as any).__calloutType = calloutType;
       return `<div class="md2post-callout md2post-callout-${calloutType}"${lineAttr} style="border-left-color: ${config.borderColor}; background-color: ${config.bgColor};">
         <div class="callout-header" style="color: ${config.color};">
-          <span class="callout-icon">${config.icon}</span>
+          <span class="callout-icon" style="background-color: ${config.color}; color: #ffffff;">${config.icon}</span>
           <span class="callout-title">${config.title}</span>
         </div>
         <div class="callout-content">\n`;

@@ -43,7 +43,10 @@ export const CODE_THEME_PALETTES: Record<string, CodeThemeInlinePalette> = {
       params: '#abb2bf',
       name: '#e06c75',
       tag: '#e06c75'
-    }
+    ,
+      operator: '#56b6c2',
+      punctuation: '#abb2bf',
+      property: '#61afef'}
   },
   'github-light': {
     containerBg: '#f6f8fa',
@@ -77,7 +80,10 @@ export const CODE_THEME_PALETTES: Record<string, CodeThemeInlinePalette> = {
       params: '#24292f',
       name: '#116329',
       tag: '#116329'
-    }
+    ,
+      operator: '#56b6c2',
+      punctuation: '#abb2bf',
+      property: '#61afef'}
   },
   'vscode-dark': {
     containerBg: '#1e1e1e',
@@ -109,7 +115,10 @@ export const CODE_THEME_PALETTES: Record<string, CodeThemeInlinePalette> = {
       params: '#9cdcfe',
       name: '#569cd6',
       tag: '#569cd6'
-    }
+    ,
+      operator: '#56b6c2',
+      punctuation: '#abb2bf',
+      property: '#61afef'}
   },
   'dracula': {
     containerBg: '#282a36',
@@ -141,7 +150,10 @@ export const CODE_THEME_PALETTES: Record<string, CodeThemeInlinePalette> = {
       params: '#ffb86c',
       name: '#ff79c6',
       tag: '#ff79c6'
-    }
+    ,
+      operator: '#56b6c2',
+      punctuation: '#abb2bf',
+      property: '#61afef'}
   },
   'solarized-light': {
     containerBg: '#fdf6e3',
@@ -173,7 +185,10 @@ export const CODE_THEME_PALETTES: Record<string, CodeThemeInlinePalette> = {
       params: '#657b83',
       name: '#268bd2',
       tag: '#268bd2'
-    }
+    ,
+      operator: '#56b6c2',
+      punctuation: '#abb2bf',
+      property: '#61afef'}
   },
   'monokai': {
     containerBg: '#272822',
@@ -205,7 +220,10 @@ export const CODE_THEME_PALETTES: Record<string, CodeThemeInlinePalette> = {
       params: '#fd971f',
       name: '#f92672',
       tag: '#f92672'
-    }
+    ,
+      operator: '#56b6c2',
+      punctuation: '#abb2bf',
+      property: '#61afef'}
   }
 };
 
@@ -262,36 +280,47 @@ function buildThemeCss(palette: CodeThemeInlinePalette, isDark: boolean): string
     .hljs {
       color: ${palette.textColor} !important;
       font-family: 'Fira Code', 'JetBrains Mono', Consolas, Monaco, monospace !important;
-      font-size: 13px !important;
-      line-height: 1.35 !important;
+      font-size: 12.5px !important;
+      line-height: 1.48 !important;
+      letter-spacing: 0 !important;
+      word-spacing: 0 !important;
       background-color: transparent !important;
     }
     #nice .line,
     .line {
-      display: block !important;
-      min-height: 1.35em !important;
-      line-height: 1.35 !important;
-      white-space: pre !important;
-      font-size: 13px !important;
+      display: flex !important;
+      align-items: flex-start;
+      min-height: 1.48em !important;
+      line-height: 1.48 !important;
+      font-size: 12.5px !important;
+      letter-spacing: 0 !important;
+      word-spacing: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
     }
     #nice .line-num,
     .line-num {
-      display: inline-block !important;
-      width: 2.8em !important;
-      min-width: 2.8em !important;
-      margin-right: 0.8em !important;
+      flex-shrink: 0 !important;
+      width: 1.9em !important;
+      min-width: 1.9em !important;
+      margin-right: 0.45em !important;
       text-align: right !important;
       color: ${palette.lineNumColor} !important;
       user-select: none !important;
-      line-height: 1.35 !important;
-      font-size: 12px;
-      opacity: 0.55;
+      line-height: 1.48 !important;
+      font-size: 11.5px !important;
+      letter-spacing: 0 !important;
+      opacity: 0.5;
+      box-sizing: border-box;
     }
     #nice .line-content,
     .line-content {
-      display: inline !important;
-      white-space: pre !important;
-      line-height: 1.35 !important;
+      flex: 1 !important;
+      min-width: 0 !important;
+      line-height: 1.48 !important;
+      font-size: 12.5px !important;
+      letter-spacing: 0 !important;
     }
 
     /* Complete Syntax Highlighting Tokens */
@@ -307,7 +336,9 @@ function buildThemeCss(palette: CodeThemeInlinePalette, isDark: boolean): string
     #nice .hljs-meta, .hljs-meta, #nice .hljs-meta-keyword, .hljs-meta-keyword { color: ${t.meta || '#61afef'} !important; }
     #nice .hljs-params, .hljs-params { color: ${t.params || palette.textColor} !important; }
     #nice .hljs-symbol, .hljs-symbol, #nice .hljs-bullet, .hljs-bullet, #nice .hljs-link, .hljs-link { color: ${t.keyword || '#56b6c2'} !important; }
-    #nice .hljs-punctuation, .hljs-punctuation { color: ${palette.textColor} !important; }
+    #nice .hljs-operator, .hljs-operator { color: ${t.operator || palette.textColor} !important; }
+    #nice .hljs-punctuation, .hljs-punctuation { color: ${t.punctuation || palette.textColor} !important; }
+    #nice .hljs-property, .hljs-property { color: ${t.property || t.title || '#61afef'} !important; } !important; }
   `;
 }
 

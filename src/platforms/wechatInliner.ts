@@ -156,7 +156,7 @@ export async function transformToInlinedHtml(
         footnotes.push({ index: currentIdx, title, href });
 
         const sup = document.createElement('sup');
-        sup.setAttribute('style', `color: ${primaryColor}; font-weight: bold; margin-left: 2px; font-size: 0.75em;`);
+        sup.setAttribute('style', `color: ${primaryColor}; font-weight: bold; margin-left: 2px; font-size: 0.75em; line-height: 1.2 !important; vertical-align: super;`);
         sup.textContent = `[${currentIdx}]`;
 
         const span = document.createElement('span');
@@ -215,7 +215,9 @@ export async function transformToInlinedHtml(
       imgWrap.setAttribute('style', 'margin: 16px 0 !important; text-align: center;');
       imgWrap.appendChild(img);
 
-      if (caption) {
+      // Toutiao does NOT support HTML captions and converts any sibling caption into regular body paragraph text.
+      // Therefore, do not append a caption text node for Toutiao (alt stays inside the img element).
+      if (caption && !isToutiao) {
         const capTag = isWechat ? 'section' : 'span';
         const capEl = document.createElement(capTag);
         capEl.setAttribute('style', 'display: block; font-size: 13px; color: #64748b; margin-top: 6px; text-align: center;');
@@ -225,6 +227,24 @@ export async function transformToInlinedHtml(
       fig.parentNode?.replaceChild(imgWrap, fig);
     } else {
       fig.remove();
+    }
+  });
+
+  clone.querySelectorAll('.md2post-image-container').forEach(container => {
+    const img = container.querySelector('img');
+    if (img) {
+      img.removeAttribute('onerror');
+      img.removeAttribute('loading');
+      img.removeAttribute('class');
+      img.setAttribute(
+        'style',
+        'max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);'
+      );
+      const wrapTag = isWechat ? 'section' : 'p';
+      const imgWrap = document.createElement(wrapTag);
+      imgWrap.setAttribute('style', 'margin: 16px 0 !important; text-align: center;');
+      imgWrap.appendChild(img);
+      container.parentNode?.replaceChild(imgWrap, container);
     }
   });
 
@@ -238,24 +258,35 @@ export async function transformToInlinedHtml(
     );
   });
 
-  // 5. Headings
-  clone.querySelectorAll('h1').forEach(el => {
-    el.setAttribute(
-      'style',
-      `font-size: 24px; font-weight: 700; color: #111827; margin: 28px 0 14px 0; padding-bottom: 8px; border-bottom: 2px solid ${primaryColor}; line-height: 1.35;`
-    );
-  });
+  // 5. Headings: Apply manual fallback styling only for platforms without full Juice theme inlining.
+  // For WeChat and Zhihu, the active theme CSS defines precise heading styles (.content left border, badges, etc.).
+  if (!isWechat && !isZhihu) {
+    clone.querySelectorAll('h1').forEach(el => {
+      el.setAttribute(
+        'style',
+        `font-size: 24px; font-weight: 700; color: #111827; margin: 28px 0 14px 0; padding-bottom: 8px; border-bottom: 2px solid ${primaryColor}; line-height: 1.6;`
+      );
+    });
 
-  clone.querySelectorAll('h2').forEach(el => {
-    el.setAttribute(
-      'style',
-      `font-size: 20px; font-weight: 600; color: #1f2937; margin: 24px 0 10px 0; padding-left: 10px; border-left: 4px solid ${primaryColor}; line-height: 1.4;`
-    );
-  });
+    clone.querySelectorAll('h2').forEach(el => {
+      el.setAttribute(
+        'style',
+        `font-size: 20px; font-weight: 600; color: #1f2937; margin: 24px 0 10px 0; padding-left: 10px; border-left: 4px solid ${primaryColor}; line-height: 1.6;`
+      );
+    });
 
-  clone.querySelectorAll('h3').forEach(el => {
-    el.setAttribute('style', `font-size: 17px; font-weight: 600; color: #374151; margin: 18px 0 8px 0; line-height: 1.45;`);
-  });
+    clone.querySelectorAll('h3').forEach(el => {
+      el.setAttribute('style', `font-size: 17px; font-weight: 600; color: #374151; margin: 18px 0 8px 0; line-height: 1.6;`);
+    });
+  } else {
+    // WeChat & Zhihu: Only ensure line-height >= 1.6 to prevent WeChat editor structure warnings,
+    // without injecting conflicting border-left or border-bottom that cause double colored bars.
+    clone.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+      if (!el.style.lineHeight) {
+        el.style.lineHeight = '1.6';
+      }
+    });
+  }
 
   // 6. Paragraphs
   const pMarginBottom = Math.min(theme.paragraphSpacing || 12, 12);
@@ -277,32 +308,37 @@ export async function transformToInlinedHtml(
     let borderColor = primaryColor;
     let bgColor = '#f0f7ff';
     let titleColor = primaryColor;
-    let icon = 'ℹ️';
+    let badgeIcon = 'ℹ';
+    let emojiIcon = 'ℹ️';
     let titleText = '注意';
 
     if (isTip) {
       borderColor = '#1a7f37';
       bgColor = '#f0fbf0';
       titleColor = '#1a7f37';
-      icon = '💡';
+      badgeIcon = '💡';
+      emojiIcon = '💡';
       titleText = '提示';
     } else if (isImportant) {
       borderColor = '#8250df';
       bgColor = '#fbf0ff';
       titleColor = '#8250df';
-      icon = '❗️';
+      badgeIcon = '!';
+      emojiIcon = '📌';
       titleText = '重点';
     } else if (isWarning) {
       borderColor = '#bf8700';
       bgColor = '#fff8ea';
       titleColor = '#bf8700';
-      icon = '⚠️';
+      badgeIcon = '!';
+      emojiIcon = '⚠️';
       titleText = '警告';
     } else if (isCaution) {
       borderColor = '#cf222e';
       bgColor = '#fff0f0';
       titleColor = '#cf222e';
-      icon = '🛑';
+      badgeIcon = '✕';
+      emojiIcon = '🚨';
       titleText = '危险';
     }
 
@@ -310,62 +346,96 @@ export async function transformToInlinedHtml(
     if (titleEl && titleEl.textContent?.trim()) {
       titleText = titleEl.textContent.trim();
     }
-    const iconEl = el.querySelector('.callout-icon');
-    if (iconEl && iconEl.textContent?.trim()) {
-      icon = iconEl.textContent.trim();
-    }
 
-    // Extract body content without the header
-    const bodyEl = el.querySelector('.callout-body');
-    const bodyHtml = bodyEl ? bodyEl.innerHTML : el.innerHTML;
+    // Extract body content: match .callout-content or .callout-body and strip any duplicate header
+    const bodyEl = el.querySelector('.callout-content') || el.querySelector('.callout-body');
+    let bodyHtml = bodyEl ? bodyEl.innerHTML : el.innerHTML;
+    bodyHtml = bodyHtml.replace(/<div class="callout-header"[\s\S]*?<\/div>/gi, '').trim();
 
     if (isWechat) {
-      // WeChat: Use <section> with inline emoji and bold title (never a block image)
+      // WeChat: Use <section> with styled circular badge icon and <span> title (NEVER <strong> to avoid theme quotes)
       const calloutSection = document.createElement('section');
       calloutSection.className = 'md2post-callout-section';
       calloutSection.setAttribute(
         'style',
-        `display: block; margin: 12px 0 14px 0 !important; padding: 12px 16px !important; background-color: ${bgColor} !important; border-left: 4px solid ${borderColor} !important; border-radius: 4px; box-sizing: border-box !important;`
+        `display: block; margin: 14px 0 !important; padding: 12px 16px !important; background-color: ${bgColor} !important; border-left: 4px solid ${borderColor} !important; border-radius: 4px; box-sizing: border-box !important; text-align: left !important;`
       );
       calloutSection.innerHTML = `
-        <section style="display: block; margin: 0 0 6px 0; line-height: 1.4;">
-          <span style="display: inline-block; margin-right: 6px; font-size: 16px; vertical-align: middle;">${icon}</span>
-          <strong style="color: ${titleColor}; font-size: 15px; vertical-align: middle; font-weight: 700;">${titleText}</strong>
+        <section style="display: flex; align-items: center; margin: 0 0 6px 0; line-height: 1.6; text-align: left;">
+          <span style="display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; background-color: ${titleColor}; color: #ffffff; font-size: 12px; font-weight: bold; margin-right: 8px; flex-shrink: 0; vertical-align: middle;">${badgeIcon}</span>
+          <span style="color: ${titleColor}; font-size: 15px; font-weight: 700; line-height: 1.6; vertical-align: middle;">${escapeHtml(titleText)}</span>
         </section>
-        <section style="display: block; margin: 0; padding: 0; color: #374151; font-size: 14.5px; line-height: 1.7;">
+        <section style="display: block; margin: 0; padding: 0; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;">
           ${bodyHtml}
         </section>
       `;
       calloutSection.querySelectorAll('p').forEach(p => {
-        p.setAttribute('style', 'margin: 0 0 6px 0; font-size: 14.5px; line-height: 1.7; color: #374151;');
+        if (!p.textContent?.trim() && !p.querySelector('img, svg')) {
+          p.remove();
+          return;
+        }
+        while (p.firstChild && (p.firstChild.nodeName === 'BR' || (p.firstChild.nodeType === Node.TEXT_NODE && !p.firstChild.textContent?.trim()))) {
+          p.removeChild(p.firstChild);
+        }
+        p.setAttribute('style', 'margin: 0 0 6px 0; font-size: 14.5px; line-height: 1.75; color: #374151; text-align: left;');
       });
+      const lastP = calloutSection.querySelector('p:last-of-type') as HTMLElement | null;
+      if (lastP) {
+        lastP.style.marginBottom = '0';
+      }
       el.parentNode?.replaceChild(calloutSection, el);
     } else {
-      // Toutiao / Zhihu / Universal: Use standard <blockquote> with inline emoji title
+      // Toutiao / Zhihu / Universal: Standard <blockquote> container
       const bq = document.createElement('blockquote');
       bq.setAttribute(
         'style',
-        `display: block; margin: 14px 0; padding: 12px 16px; background-color: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 4px; color: #374151; font-size: 14.5px; line-height: 1.7;`
+        `display: block; margin: 14px 0; padding: 12px 16px; background-color: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 4px; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;`
       );
-      bq.innerHTML = `
-        <p style="margin: 0 0 6px 0; font-weight: bold; color: ${titleColor}; font-size: 15px;">
-          <span style="margin-right: 6px; font-size: 16px;">${icon}</span>${titleText}
-        </p>
-        <div style="margin: 0; padding: 0; color: #374151; font-size: 14.5px; line-height: 1.7;">
-          ${bodyHtml}
-        </div>
-      `;
+
+      // Clean body content paragraphs first
+      const bodyDiv = document.createElement('div');
+      bodyDiv.setAttribute('style', 'margin: 0; padding: 0; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;');
+      bodyDiv.innerHTML = bodyHtml;
+
+      bodyDiv.querySelectorAll('p').forEach(p => {
+        if (!p.textContent?.trim() && !p.querySelector('img, svg')) {
+          p.remove();
+          return;
+        }
+        while (p.firstChild && (p.firstChild.nodeName === 'BR' || (p.firstChild.nodeType === Node.TEXT_NODE && !p.firstChild.textContent?.trim()))) {
+          p.removeChild(p.firstChild);
+        }
+        p.setAttribute('style', 'margin: 0 0 6px 0; font-size: 14.5px; line-height: 1.75; color: #374151; text-align: left;');
+      });
+
+      const lastBqP = bodyDiv.querySelector('p:last-of-type') as HTMLElement | null;
+      if (lastBqP) {
+        lastBqP.style.marginBottom = '0';
+      }
+
+      // Title header as a standard left-aligned <p> without flex or text-align: center to prevent Toutiao editor from centering the icon
+      const headerP = document.createElement('p');
+      headerP.setAttribute(
+        'style',
+        `margin: 0 0 8px 0 !important; font-size: 15px !important; font-weight: 700 !important; color: ${titleColor} !important; line-height: 1.6 !important; text-align: left !important;`
+      );
+      headerP.innerHTML = `<span style="margin-right: 6px; font-style: normal; font-size: 15px; vertical-align: baseline;">${emojiIcon}</span><span style="color: ${titleColor}; font-weight: 700;">${escapeHtml(titleText)}</span>`;
+
+      bq.appendChild(headerP);
+      bq.appendChild(bodyDiv);
       el.parentNode?.replaceChild(bq, el);
     }
   });
 
   // 8. Blockquotes (standard)
-  clone.querySelectorAll('blockquote:not(.md2post-callout)').forEach(el => {
-    el.setAttribute(
-      'style',
-      `margin: 14px 0 16px 0; padding: 10px 16px; color: #475569; background-color: #f8fafc; border-left: 4px solid ${primaryColor}; border-radius: 0 6px 6px 0; font-size: 14.5px; line-height: 1.65;`
-    );
-  });
+  if (!isWechat && !isZhihu) {
+    clone.querySelectorAll('blockquote:not(.md2post-callout)').forEach(el => {
+      el.setAttribute(
+        'style',
+        `margin: 14px 0 16px 0; padding: 10px 16px; color: #475569; background-color: #f8fafc; border-left: 4px solid ${primaryColor}; border-radius: 0 6px 6px 0; font-size: 14.5px; line-height: 1.65;`
+      );
+    });
+  }
 
   // 9. Tables: Platform-Specific Table Architecture
   if (isWechat) {
@@ -560,9 +630,9 @@ export async function transformToInlinedHtml(
   });
 
   // 11.3 Platform-Specific Code Container Architecture:
-  if (isZhihu) {
-    // Zhihu: MUST use clean native <pre><code class="language-..."> without extra <section> wrappers or line numbers
-    // Zhihu's rich text editor automatically converts standard <pre><code> into its native code block component!
+  if (isZhihu || isToutiao) {
+    // Zhihu & Toutiao: MUST use clean native <pre><code class="language-..."> with raw \n newlines
+    // Their rich text editors (ProseMirror / Draft) parse standard <pre><code> directly into native multi-line code blocks!
     clone.querySelectorAll('.md2post-code-container').forEach(container => {
       const langEl = container.querySelector('.code-lang');
       const lang = langEl?.textContent?.trim().toLowerCase() || '';
@@ -578,6 +648,10 @@ export async function transformToInlinedHtml(
       }
 
       const pre = document.createElement('pre');
+      pre.setAttribute(
+        'style',
+        `margin: 14px 0; padding: 12px 14px; background-color: ${codePalette.preBg}; color: ${codePalette.textColor}; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 13px; line-height: 1.5; white-space: pre;`
+      );
       const code = document.createElement('code');
       if (lang) {
         code.className = `language-${lang}`;
@@ -606,23 +680,17 @@ export async function transformToInlinedHtml(
       const headerSection = document.createElement('section');
       headerSection.setAttribute(
         'style',
-        `display: block; padding: 6px 12px; background-color: ${codePalette.macHeaderBg}; border-bottom: 1px solid ${codePalette.macHeaderBorder}; box-sizing: border-box !important;`
+        `display: block; padding: 7px 12px; background-color: ${codePalette.macHeaderBg}; border-bottom: 1px solid ${codePalette.macHeaderBorder}; box-sizing: border-box !important; overflow: hidden; line-height: 1.6;`
       );
       headerSection.innerHTML = `
-        <table style="width: 100% !important; margin: 0 !important; padding: 0 !important; border: none !important; border-collapse: collapse !important; background: transparent !important;">
-          <tbody>
-            <tr>
-              <td style="border: none !important; padding: 0 !important; text-align: left; vertical-align: middle;">
-                <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #ff5f56; margin-right: 5px; vertical-align: middle;"></span>
-                <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #ffbd2e; margin-right: 5px; vertical-align: middle;"></span>
-                <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #27c93f; vertical-align: middle;"></span>
-              </td>
-              <td style="border: none !important; padding: 0 !important; text-align: right; vertical-align: middle; font-size: 11px; text-transform: uppercase; color: #9da5b4; font-family: monospace; letter-spacing: 0.05em;">
-                ${escapeHtml(lang)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <section style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;">
+          <section style="display: flex; align-items: center; gap: 5px;">
+            <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #ff5f56;"></span>
+            <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #ffbd2e;"></span>
+            <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #27c93f;"></span>
+          </section>
+          ${lang ? `<section style="font-size: 11px; text-transform: uppercase; color: #9da5b4; font-family: monospace; letter-spacing: 0.05em; font-weight: 500;">${escapeHtml(lang)}</section>` : ''}
+        </section>
       `;
       header.parentNode?.replaceChild(headerSection, header);
     });
@@ -632,7 +700,7 @@ export async function transformToInlinedHtml(
       codePreSection.className = 'md2post-code-body';
       codePreSection.setAttribute(
         'style',
-        `display: block; margin: 0 !important; padding: 8px 12px !important; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; box-sizing: border-box !important; background-color: ${codePalette.preBg}; color: ${codePalette.textColor}; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.45; white-space: pre !important; word-break: normal;`
+        `display: block; margin: 0 !important; padding: 8px 10px !important; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; box-sizing: border-box !important; background-color: ${codePalette.preBg}; color: ${codePalette.textColor}; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 12.5px; line-height: 1.48; letter-spacing: 0 !important; word-spacing: 0 !important; white-space: pre !important; word-break: normal;`
       );
       codePreSection.innerHTML = pre.innerHTML;
       pre.parentNode?.replaceChild(codePreSection, pre);
@@ -641,50 +709,72 @@ export async function transformToInlinedHtml(
     clone.querySelectorAll('code.hljs').forEach(codeEl => {
       codeEl.setAttribute(
         'style',
-        `display: block !important; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.45; color: ${codePalette.textColor}; background-color: transparent; white-space: pre !important;`
+        `display: block !important; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 12.5px; line-height: 1.48; letter-spacing: 0 !important; word-spacing: 0 !important; color: ${codePalette.textColor}; background-color: transparent; white-space: pre !important;`
       );
     });
 
     clone.querySelectorAll('.line').forEach(line => {
-      line.setAttribute('style', 'display: block !important; line-height: 1.45; min-height: 1.45em; white-space: pre !important; margin: 0; padding: 0;');
+      line.setAttribute(
+        'style',
+        'display: flex !important; align-items: flex-start; line-height: 1.48; min-height: 1.48em; margin: 0; padding: 0; box-sizing: border-box; letter-spacing: 0 !important; word-spacing: 0 !important;'
+      );
     });
 
     clone.querySelectorAll('.line-num').forEach(num => {
       num.setAttribute(
         'style',
-        `display: inline-block !important; width: 2.5em; margin-right: 0.8em; text-align: right; color: ${codePalette.lineNumColor}; user-select: none; line-height: 1.45; font-size: 12px;`
+        `flex-shrink: 0 !important; width: 1.9em !important; margin-right: 0.45em; text-align: right; color: ${codePalette.lineNumColor}; user-select: none; line-height: 1.48; font-size: 11.5px; letter-spacing: 0 !important; opacity: 0.5;`
       );
     });
+
+    clone.querySelectorAll('.line-content').forEach(content => {
+      content.setAttribute(
+        'style',
+        'flex: 1 !important; min-width: 0 !important; line-height: 1.48; font-size: 12.5px; letter-spacing: 0 !important; white-space: pre !important;'
+      );
+    });
+
   } else {
-    // Toutiao & Universal: Use styled <pre><code class="hljs"> with auto-wrap
+    // Universal: Use styled <pre><code class="hljs"> with auto-wrap and real newlines
     clone.querySelectorAll('.md2post-code-container').forEach(container => {
       const pre = container.querySelector('.md2post-pre');
       if (pre) {
         pre.setAttribute(
           'style',
-          `margin: 14px 0; padding: 10px 14px; background-color: ${codePalette.preBg}; color: ${codePalette.textColor}; border-radius: 6px; overflow-x: auto; font-family: Consolas, Monaco, monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-all;`
+          `margin: 14px 0; padding: 8px 10px; background-color: ${codePalette.preBg}; color: ${codePalette.textColor}; border-radius: 6px; overflow-x: auto; font-family: Consolas, Monaco, monospace; font-size: 12.5px; line-height: 1.48; letter-spacing: 0 !important; word-spacing: 0 !important; white-space: pre-wrap; word-break: break-all;`
         );
         container.parentNode?.replaceChild(pre, container);
       }
     });
 
     clone.querySelectorAll('.line').forEach(line => {
-      line.setAttribute('style', 'display: block !important; line-height: 1.45;');
+      line.setAttribute('style', 'display: block !important; line-height: 1.48; letter-spacing: 0 !important;');
+      line.insertAdjacentText('afterend', '\n');
     });
 
     clone.querySelectorAll('.line-num').forEach(num => {
       num.setAttribute(
         'style',
-        `display: inline-block !important; width: 2.4em; margin-right: 0.8em; text-align: right; color: ${codePalette.lineNumColor}; font-size: 12px;`
+        `display: inline-block !important; width: 1.9em; margin-right: 0.45em; text-align: right; color: ${codePalette.lineNumColor}; font-size: 11.5px; letter-spacing: 0 !important; opacity: 0.5;`
       );
     });
   }
 
-  // 12. Inline Code
-  clone.querySelectorAll(':not(pre) > code').forEach(code => {
+  // 12. Inline Code (strictly target inline code, NEVER code inside code blocks)
+  clone.querySelectorAll('code').forEach(code => {
+    // Strictly skip code blocks
+    if (
+      code.classList.contains('hljs') ||
+      code.closest('.md2post-code-container') ||
+      code.closest('.md2post-code-section') ||
+      code.closest('.md2post-code-body') ||
+      code.closest('pre')
+    ) {
+      return;
+    }
     code.setAttribute(
       'style',
-      `font-family: Consolas, Monaco, monospace; font-size: 13px; padding: 2px 5px; margin: 0 2px; background-color: #f1f5f9; color: #e11d48; border-radius: 4px; border: 1px solid #e2e8f0;`
+      'font-family: Consolas, Monaco, monospace; font-size: 13.5px; padding: 2px 5px; margin: 0 2px; background-color: #f1f5f9; color: #e11d48; border-radius: 4px; border: 1px solid #e2e8f0;'
     );
   });
 
@@ -697,9 +787,11 @@ export async function transformToInlinedHtml(
   });
 
   // 14. Horizontal Rules
-  clone.querySelectorAll('hr').forEach(hr => {
-    hr.setAttribute('style', 'height: 1px; background-color: #e2e8f0; border: none; margin: 20px 0;');
-  });
+  if (!isWechat && !isZhihu) {
+    clone.querySelectorAll('hr').forEach(hr => {
+      hr.setAttribute('style', 'height: 1px; background-color: #e2e8f0; border: none; margin: 20px 0;');
+    });
+  }
 
   // 15. Strip redundant whitespace text nodes between top-level block elements
   const childNodes = Array.from(clone.childNodes);
@@ -766,6 +858,14 @@ export async function transformToInlinedHtml(
     `font-family: ${theme.fontFamily}; font-size: ${theme.fontSize}px; line-height: ${theme.lineHeight}; color: ${theme.textColor}; background-color: #ffffff; letter-spacing: 0.02em; word-break: break-word;`
   );
   wrapper.innerHTML = processedHtml;
+
+  // Safety pass: Scan and normalize any abnormal line-height (e.g. line-height: 0) to guarantee WeChat #1.3 compliance
+  wrapper.querySelectorAll('*').forEach(el => {
+    const style = el.getAttribute('style');
+    if (style && /line-height\s*:\s*(0|0px|0em|0pt)\b/i.test(style)) {
+      el.setAttribute('style', style.replace(/line-height\s*:\s*(0|0px|0em|0pt)\b/gi, 'line-height: 1.2'));
+    }
+  });
 
   return {
     inlinedHtml: wrapper.outerHTML,

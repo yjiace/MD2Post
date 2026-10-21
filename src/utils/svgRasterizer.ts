@@ -114,6 +114,25 @@ export function svgToPngDataUrl(svgStringOrElement: string | SVGElement): Promis
         }
       });
 
+      // Ensure cluster labels (subgraph titles) have comfortable margin from top border if tight
+      const clusters = doc.querySelectorAll('.cluster');
+      clusters.forEach(cluster => {
+        const rect = cluster.querySelector('rect');
+        const label = cluster.querySelector('.cluster-label');
+        if (rect && label) {
+          const rectY = parseFloat(rect.getAttribute('y') || '0');
+          const transform = label.getAttribute('transform') || '';
+          const match = transform.match(/translate\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)/);
+          if (match) {
+            const x = parseFloat(match[1]);
+            const y = parseFloat(match[2]);
+            if (y - rectY < 14) {
+              label.setAttribute('transform', `translate(${x}, ${rectY + 18})`);
+            }
+          }
+        }
+      });
+
       const serializedSvg = new XMLSerializer().serializeToString(doc.documentElement);
 
       // 4. Encode as Base64 Data URL (immune to Blob URL cross-origin / lifecycle bugs)
