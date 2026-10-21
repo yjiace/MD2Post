@@ -129,7 +129,7 @@ public class OrderInventoryService {
 
 ## 2.2 架构拓扑配图 (CDN 协议相对路径)
 
-![高并发多级防护拓扑图](//cdn.example.com/images/architecture-topology.png)
+![高并发多级防护拓扑图](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=900&auto=format&fit=crop)
 
 ## 2.3 延伸参考与文献
 

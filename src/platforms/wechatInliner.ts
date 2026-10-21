@@ -64,6 +64,11 @@ export async function transformToInlinedHtml(
       const cleanImg = document.createElement('img');
       cleanImg.setAttribute('src', pngUrl);
       cleanImg.setAttribute('alt', '流程图');
+      if (isZhihu) {
+        cleanImg.className = 'origin_image zh-lightbox-thumb';
+        cleanImg.setAttribute('data-actualsrc', pngUrl);
+        cleanImg.setAttribute('data-original', pngUrl);
+      }
       cleanImg.setAttribute(
         'style',
         'max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);'
@@ -75,15 +80,25 @@ export async function transformToInlinedHtml(
       // Fallback
       const codeAttr = block.getAttribute('data-code');
       const rawCode = codeAttr ? decodeURIComponent(codeAttr) : '';
-      const fallback = document.createElement(isWechat ? 'section' : 'blockquote');
-      fallback.setAttribute(
-        'style',
-        'display: block; margin: 14px 0 !important; padding: 12px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; text-align: center; font-size: 13px; color: #64748b;'
-      );
-      fallback.innerHTML = `<div style="font-weight: 600; color: #475569; margin-bottom: 6px;">[流程图]</div>${
-        rawCode ? `<div style="text-align: left; background: #ffffff; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin: 0; color: #334155; font-family: monospace; white-space: pre-wrap;">${escapeHtml(rawCode)}</div>` : ''
-      }`;
-      block.parentNode?.replaceChild(fallback, block);
+      if (isZhihu) {
+        const pre = document.createElement('pre');
+        pre.setAttribute('style', 'background-color: #282c34; color: #abb2bf; padding: 12px; border-radius: 6px; font-size: 13px;');
+        const code = document.createElement('code');
+        code.className = 'language-mermaid';
+        code.textContent = rawCode;
+        pre.appendChild(code);
+        block.parentNode?.replaceChild(pre, block);
+      } else {
+        const fallback = document.createElement(isWechat ? 'section' : 'blockquote');
+        fallback.setAttribute(
+          'style',
+          'display: block; margin: 14px 0 !important; padding: 12px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; text-align: center; font-size: 13px; color: #64748b;'
+        );
+        fallback.innerHTML = `<div style="font-weight: 600; color: #475569; margin-bottom: 6px;">[流程图]</div>${
+          rawCode ? `<div style="text-align: left; background: #ffffff; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin: 0; color: #334155; font-family: monospace; white-space: pre-wrap;">${escapeHtml(rawCode)}</div>` : ''
+        }`;
+        block.parentNode?.replaceChild(fallback, block);
+      }
     }
   }
 
@@ -281,8 +296,37 @@ export async function transformToInlinedHtml(
 
   // 5. Headings: Apply manual fallback styling.
   // For WeChat, the active theme CSS defines heading styles (.content left border, badges, etc.).
-  // For Zhihu, Toutiao, and Universal, explicit styling must be inlined on h1-h6 so borders and colors are preserved.
-  if (!isWechat) {
+  // For Zhihu, use clean semantic headings without heavy borders that disrupt Zhihu editor.
+  // For Toutiao and Universal, explicit styling is inlined on h1-h6.
+  if (isZhihu) {
+    clone.querySelectorAll('h1').forEach(el => {
+      el.setAttribute(
+        'style',
+        'font-size: 22px; font-weight: 700; color: #121212; margin: 24px 0 12px 0; line-height: 1.5; text-align: left;'
+      );
+    });
+
+    clone.querySelectorAll('h2').forEach(el => {
+      el.setAttribute(
+        'style',
+        'font-size: 20px; font-weight: 600; color: #121212; margin: 20px 0 10px 0; line-height: 1.5; text-align: left;'
+      );
+    });
+
+    clone.querySelectorAll('h3').forEach(el => {
+      el.setAttribute(
+        'style',
+        'font-size: 17px; font-weight: 600; color: #121212; margin: 16px 0 8px 0; line-height: 1.5; text-align: left;'
+      );
+    });
+
+    clone.querySelectorAll('h4, h5, h6').forEach(el => {
+      el.setAttribute(
+        'style',
+        'font-size: 15px; font-weight: 600; color: #374151; margin: 14px 0 6px 0; line-height: 1.5; text-align: left;'
+      );
+    });
+  } else if (!isWechat) {
     clone.querySelectorAll('h1').forEach(el => {
       el.setAttribute(
         'style',
@@ -410,8 +454,65 @@ export async function transformToInlinedHtml(
         lastP.style.marginBottom = '0';
       }
       el.parentNode?.replaceChild(calloutSection, el);
+    } else if (isZhihu) {
+      // Zhihu Draft.js: <blockquote> MUST only contain direct children (<p> elements).
+      // Nested <div> causes Zhihu's editor to close the blockquote prematurely and eject the body!
+      const bq = document.createElement('blockquote');
+      bq.setAttribute(
+        'style',
+        `display: block; margin: 16px 0; padding: 12px 16px; background-color: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 4px; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;`
+      );
+
+      // Title header as a standard left-aligned <p>
+      const headerP = document.createElement('p');
+      headerP.setAttribute(
+        'style',
+        `margin: 0 0 6px 0 !important; font-size: 15px !important; font-weight: 700 !important; color: ${titleColor} !important; line-height: 1.6 !important; text-align: left !important;`
+      );
+      headerP.innerHTML = `<span style="margin-right: 6px; font-style: normal; font-size: 15px; vertical-align: baseline;">${emojiIcon}</span><strong style="color: ${titleColor}; font-weight: 700;">${escapeHtml(titleText)}</strong>`;
+      bq.appendChild(headerP);
+
+      // Parse body paragraphs directly into bq
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = bodyHtml;
+
+      Array.from(tempDiv.children).forEach(child => {
+        if (child.tagName === 'P') {
+          const p = child as HTMLElement;
+          p.setAttribute('style', 'margin: 0 0 6px 0 !important; font-size: 14.5px !important; line-height: 1.75 !important; color: #374151 !important; text-align: left !important;');
+          bq.appendChild(p);
+        } else if (child.tagName === 'OL' || child.tagName === 'UL') {
+          const isOl = child.tagName === 'OL';
+          Array.from(child.children).forEach((li, idx) => {
+            if (li.tagName === 'LI') {
+              const p = document.createElement('p');
+              p.setAttribute('style', 'margin: 0 0 6px 0 !important; font-size: 14px !important; line-height: 1.7 !important; color: #374151 !important; text-align: left !important; padding-left: 2px;');
+              const marker = isOl ? `${idx + 1}、` : '• ';
+              p.innerHTML = `<span style="font-weight: 600; color: ${titleColor}; margin-right: 4px;">${marker}</span>${li.innerHTML}`;
+              bq.appendChild(p);
+            }
+          });
+        } else {
+          bq.appendChild(child);
+        }
+      });
+
+      // If tempDiv had only raw text or no block children
+      if (tempDiv.children.length === 0 && tempDiv.textContent?.trim()) {
+        const textP = document.createElement('p');
+        textP.setAttribute('style', 'margin: 0; font-size: 14.5px !important; line-height: 1.75 !important; color: #374151 !important; text-align: left !important;');
+        textP.textContent = tempDiv.textContent.trim();
+        bq.appendChild(textP);
+      }
+
+      const lastBqChild = bq.lastElementChild as HTMLElement | null;
+      if (lastBqChild && lastBqChild.tagName === 'P') {
+        lastBqChild.style.marginBottom = '0';
+      }
+
+      el.parentNode?.replaceChild(bq, el);
     } else {
-      // Toutiao / Zhihu / Universal: Standard <blockquote> container
+      // Toutiao / Universal: Standard <blockquote> container
       const bq = document.createElement('blockquote');
       bq.setAttribute(
         'style',
@@ -730,6 +831,44 @@ export async function transformToInlinedHtml(
       );
     });
 
+  } else if (isZhihu) {
+    // Zhihu: Clean standard <pre><code class="language-..."> without line numbers,
+    // without Mac window header dots, and with syntax token colors inlined!
+    // This allows Zhihu to cleanly recognize it as an official code block with zero line-number corruption!
+    clone.querySelectorAll('.md2post-code-container').forEach(container => {
+      const langEl = container.querySelector('.code-lang');
+      const lang = langEl?.textContent?.trim() || '';
+
+      const lines = container.querySelectorAll('.line');
+      let codeHtml = '';
+      if (lines.length > 0) {
+        const lineParts: string[] = [];
+        lines.forEach(l => {
+          const contentEl = l.querySelector('.line-content');
+          lineParts.push(contentEl ? contentEl.innerHTML : l.innerHTML);
+        });
+        codeHtml = lineParts.join('\n');
+      } else {
+        const codeEl = container.querySelector('code');
+        codeHtml = codeEl ? codeEl.innerHTML : '';
+      }
+
+      const pre = document.createElement('pre');
+      pre.setAttribute(
+        'style',
+        `display: block; margin: 16px 0 !important; padding: 14px 16px !important; background-color: ${codePalette.containerBg || '#282c34'}; color: ${codePalette.textColor || '#abb2bf'}; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13.5px; line-height: 1.55; border-radius: 6px; overflow-x: auto; white-space: pre !important; word-break: normal;`
+      );
+
+      const codeEl = document.createElement('code');
+      if (lang) {
+        codeEl.className = `language-${lang}`;
+      }
+      codeEl.setAttribute('style', 'font-family: inherit; font-size: inherit; background-color: transparent; white-space: pre !important;');
+      codeEl.innerHTML = codeHtml;
+
+      pre.appendChild(codeEl);
+      container.parentNode?.replaceChild(pre, container);
+    });
   } else {
     // Zhihu, Toutiao & Universal: Use standard styled <div> container with Mac window header,
     // inlined syntax token colors, and <pre><code> preserving full formatting and indentation!
@@ -860,7 +999,7 @@ export async function transformToInlinedHtml(
   });
 
   let processedHtml = clone.innerHTML;
-  if (isWechat || isZhihu) {
+  if (isWechat) {
     try {
       const fullCss = `${WEIYAN_BASIC_CSS}\n${theme.customCss || ''}`;
       const wrappedHtml = `<div id="nice">${processedHtml}</div>`;
@@ -887,12 +1026,16 @@ export async function transformToInlinedHtml(
 
   const rootTag = isWechat ? 'section' : 'div';
   const wrapper = document.createElement(rootTag);
-  wrapper.id = 'nice';
-  wrapper.className = isToutiao ? 'md2post-toutiao-wrapper' : isZhihu ? 'md2post-zhihu-wrapper' : `md2post-${platform}-wrapper`;
-  wrapper.setAttribute(
-    'style',
-    `font-family: ${theme.fontFamily}; font-size: ${theme.fontSize}px; line-height: ${theme.lineHeight}; color: ${theme.textColor}; background-color: #ffffff; letter-spacing: 0.02em; word-break: break-word;`
-  );
+  if (isZhihu) {
+    wrapper.setAttribute('style', 'color: #121212; font-size: 16px; line-height: 1.68; word-break: break-word;');
+  } else {
+    wrapper.id = 'nice';
+    wrapper.className = isToutiao ? 'md2post-toutiao-wrapper' : `md2post-${platform}-wrapper`;
+    wrapper.setAttribute(
+      'style',
+      `font-family: ${theme.fontFamily}; font-size: ${theme.fontSize}px; line-height: ${theme.lineHeight}; color: ${theme.textColor}; background-color: #ffffff; letter-spacing: 0.02em; word-break: break-word;`
+    );
+  }
   wrapper.innerHTML = processedHtml;
 
   // Safety pass: Scan and normalize any abnormal line-height (e.g. line-height: 0) to guarantee WeChat #1.3 compliance

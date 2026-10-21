@@ -57,6 +57,10 @@ export const App: React.FC = () => {
     }, 2500);
   };
 
+  useEffect(() => {
+    (window as any).__showToast = showToast;
+  }, []);
+
   // 2. Modals
   const [isPrecheckOpen, setIsPrecheckOpen] = useState(false);
   const [isArticlesOpen, setIsArticlesOpen] = useState(false);
@@ -272,7 +276,76 @@ export const App: React.FC = () => {
     }
   };
 
-  // 2. 复制到知乎 (Rich Text with Inlined CSS & Formulas)
+  // 知乎专用 Markdown 适配器：彻底解决知乎 Markdown 解析器的引用换行断裂和列表脱离引用块的缺陷
+  const adaptMarkdownForZhihu = (markdown: string): string => {
+    const lines = markdown.split(/\r?\n/);
+    const result: string[] = [];
+    let inBq = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      const isBqLine = /^[ \t]*>/.test(line);
+
+      if (isBqLine) {
+        inBq = true;
+        const bqMatch = line.match(/^([ \t]*>[ \t]*)(.*)$/);
+        const prefix = bqMatch ? bqMatch[1] : '> ';
+        const content = bqMatch ? bqMatch[2] : '';
+
+        // 1. 转换 GitHub Alert 语法（[!TIP] 等）为知乎兼容的高亮块标题
+        const alertMatch = content.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*(.*)$/i);
+        if (alertMatch) {
+          const type = alertMatch[1].toUpperCase();
+          let badge = 'ℹ️ **注意**';
+          if (type === 'TIP') badge = '💡 **提示**';
+          else if (type === 'IMPORTANT') badge = '📌 **重点**';
+          else if (type === 'WARNING') badge = '⚠️ **警告**';
+          else if (type === 'CAUTION') badge = '🚨 **危险**';
+
+          const rawRest = (alertMatch[2] || '').trim().replace(/^[：:\s]+/, '').replace(/[:：]+$/, '');
+          if (rawRest) {
+            line = `${prefix}${badge}：${rawRest}`;
+          } else {
+            line = `${prefix}${badge}`;
+          }
+        } else {
+          // 2. 避免列表被知乎 Draft.js 强行踢出引用块：
+          // 知乎的块模型中引用块和有序/无序列表互斥，遇到 `> 1. ` 会直接终结引用块。
+          // 将其平滑转换为 `> 1、` 和 `> • `，确保 100% 留在引用块内！
+          const listMatch = content.match(/^(\d+)\.[ \t]+(.*)$/);
+          const bulletMatch = content.match(/^[-*][ \t]+(.*)$/);
+          if (listMatch) {
+            line = `${prefix}${listMatch[1]}、${listMatch[2]}`;
+          } else if (bulletMatch) {
+            line = `${prefix}• ${bulletMatch[1]}`;
+          }
+        }
+      } else {
+        if (!line.trim()) {
+          inBq = false;
+        }
+      }
+
+      // 3. 保护引用块内部连续换行（解决附件1中核心论文与适合人群被合并到同一行的问题）：
+      // 在标准 CommonMark 中未带两个空格的换行为软换行，知乎会将其拼接为一行。
+      // 若当前行属于引用且下一行是引用条目（如 `> 📌`、`> •`、`> \d+、` 等），当前行末尾追加 2 个空格强制硬换行！
+      if (inBq && line.trim()) {
+        const nextLine = lines[i + 1];
+        if (nextLine !== undefined) {
+          const isNextNewItem = /^[ \t]*>[ \t]*(📌|•|\d+、|[💡ℹ️⚠️📌🚨]|[*_]{2}|-|\d+\.)/.test(nextLine);
+          if (isNextNewItem && !line.endsWith('  ')) {
+            line = line + '  ';
+          }
+        }
+      }
+
+      result.push(line);
+    }
+
+    return result.join('\n');
+  };
+
+  // 2. 复制到知乎 (Zhihu-tailored Clean Rich Text + Original Plain Markdown Dual-Channel)
   const handleCopyZhihu = async () => {
     try {
       setCopiedAction('zhihu');
@@ -291,7 +364,7 @@ export const App: React.FC = () => {
         domToCopy.innerHTML = freshHtml;
       }
 
-      const { inlinedHtml, plainText } = await transformToInlinedHtml(domToCopy, {
+      const { inlinedHtml } = await transformToInlinedHtml(domToCopy, {
         theme: activeTheme,
         primaryColor: settings.primaryColor,
         codeThemeId: settings.codeSettings.themeId,
@@ -299,12 +372,16 @@ export const App: React.FC = () => {
         platform: 'zhihu'
       });
 
-      await copyRichTextToClipboard(inlinedHtml, plainText);
+      const rawClean = preprocessMarkdown(rawContent).cleanMarkdown || rawContent;
+      const freshCleanMarkdown = adaptMarkdownForZhihu(rawClean);
+
+      await copyRichTextToClipboard(inlinedHtml, freshCleanMarkdown);
+
       const hasMermaid = /```mermaid/i.test(rawContent);
       if (hasMermaid) {
-        showToast('已复制，请到知乎粘贴（流程图如遇知乎拦截可点击预览区PNG直接插入）');
+        showToast('已复制知乎格式！文中含流程图，可在右侧预览区点击流程图【复制图片】在知乎直接粘贴');
       } else {
-        showToast('已复制，请到知乎专栏粘贴');
+        showToast('已复制知乎格式，请直接粘贴到知乎专栏/回答');
       }
     } catch (err) {
       console.error('Zhihu copy failed:', err);

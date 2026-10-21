@@ -100,8 +100,8 @@ export const Preview: React.FC<PreviewProps> = ({
               <div class="diagram-toolbar">
                 <span class="diagram-label">Mermaid 流程图</span>
                 <div class="diagram-actions">
-                  <button class="diagram-export-btn" onclick="window.__copyMermaidPng && window.__copyMermaidPng('${uniqueId}', this)" title="复制高清图片到剪贴板 (可直接在掘金等编辑器内按 Ctrl+V 粘贴为官方图床图片)">
-                    复制图片
+                  <button class="diagram-export-btn diagram-copy-img-btn" onclick="window.__copyMermaidPng && window.__copyMermaidPng('${uniqueId}', this)" title="复制高清流程图图片到剪贴板（知乎等平台不支持流程图代码直接渲染，按 Ctrl+V 直接粘贴此图片）">
+                    复制
                   </button>
                   <button class="diagram-export-btn" onclick="window.__downloadMermaidSvg && window.__downloadMermaidSvg('${uniqueId}')" title="下载 SVG 矢量图">
                     SVG
@@ -111,7 +111,7 @@ export const Preview: React.FC<PreviewProps> = ({
                   </button>
                 </div>
               </div>
-              <div class="diagram-svg-container" id="${uniqueId}-container">
+              <div class="diagram-svg-container" id="${uniqueId}-container" onclick="window.__copyMermaidPng && window.__copyMermaidPng('${uniqueId}')" title="点击也可直接复制高清图片 (在知乎按 Ctrl+V 粘贴)" style="cursor: pointer;">
                 ${processedSvg}
               </div>
               ${pngDataUrl ? `<img class="mermaid-img" src="${pngDataUrl}" alt="流程图" style="display:none;" />` : ''}
@@ -168,7 +168,7 @@ export const Preview: React.FC<PreviewProps> = ({
       }
     };
 
-    // Provide global copy PNG image to clipboard function (works seamlessly with Juejin, Zhihu, etc.)
+    // Provide global copy PNG image to clipboard function (works seamlessly with Zhihu, Juejin, etc.)
     (window as any).__copyMermaidPng = async (id: string, btnEl?: HTMLElement) => {
       try {
         const container = document.getElementById(`${id}-container`);
@@ -183,27 +183,35 @@ export const Preview: React.FC<PreviewProps> = ({
           }
         }
 
-        if (pngUrl) {
-          const res = await fetch(pngUrl);
-          const blob = await res.blob();
+        if (pngUrl && pngUrl.startsWith('data:image/')) {
+          const blob = dataUrlToBlob(pngUrl);
           await navigator.clipboard.write([
             new ClipboardItem({ 'image/png': blob })
           ]);
           if (btnEl) {
-            const oldText = btnEl.textContent;
-            btnEl.textContent = '已复制!';
+            const oldHtml = btnEl.innerHTML;
+            btnEl.innerHTML = '✓ 已复制图片!';
             btnEl.style.backgroundColor = '#10b981';
             btnEl.style.color = '#ffffff';
+            btnEl.style.borderColor = '#059669';
             setTimeout(() => {
-              btnEl.textContent = oldText;
+              btnEl.innerHTML = oldHtml;
               btnEl.style.backgroundColor = '';
               btnEl.style.color = '';
-            }, 1800);
+              btnEl.style.borderColor = '';
+            }, 2000);
+          }
+          if ((window as any).__showToast) {
+            (window as any).__showToast('流程图已复制为高清图片！在知乎/掘金编辑器按 Ctrl+V 即可粘贴');
           }
         }
       } catch (err) {
         console.error('Failed to copy mermaid image to clipboard:', err);
-        alert('复制图片到剪贴板失败，您可以通过旁边的 PNG 按钮直接下载图片');
+        if ((window as any).__showToast) {
+          (window as any).__showToast('复制图片失败，请使用旁边的 PNG 按钮下载后上传');
+        } else {
+          alert('复制图片到剪贴板失败，您可以通过旁边的 PNG 按钮直接下载图片');
+        }
       }
     };
   }, [htmlContent, primaryColor]);
@@ -348,4 +356,16 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(';base64,');
+  const contentType = parts[0].split(':')[1] || 'image/png';
+  const raw = window.atob(parts[1]);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  return new Blob([uInt8Array], { type: contentType });
 }

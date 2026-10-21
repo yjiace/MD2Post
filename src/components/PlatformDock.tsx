@@ -17,7 +17,7 @@ export const PlatformDock: React.FC<PlatformDockProps> = ({
 }) => {
   return (
     <aside className="nice-sidebar" aria-label="快捷复制工具栏">
-      {/* 1. 复制到微信公众号 */}
+      {/* 复制到微信公众号 */}
       <div className="nice-dock-item">
         <button
           id="nice-sidebar-wechat"
@@ -36,24 +36,28 @@ export const PlatformDock: React.FC<PlatformDockProps> = ({
         <span className="dock-tooltip">复制到公众号</span>
       </div>
 
-      {/* 2. 复制到知乎 */}
+      {/* 复制到今日头条 */}
       <div className="nice-dock-item">
         <button
-          id="nice-sidebar-zhihu"
-          className="nice-btn nice-btn-zhihu"
-          onClick={onCopyZhihu}
-          title="复制到知乎"
-          aria-label="复制到知乎"
+            id="nice-sidebar-toutiao"
+            className="nice-btn nice-btn-toutiao"
+            onClick={onCopyToutiao}
+            title="复制到今日头条"
+            aria-label="复制到今日头条"
         >
-          <svg className="nice-btn-zhihu-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#1296db" d="M564.7 230.1V803h60l25.2 71.4L756.3 803h131.5V230.1H564.7z m247.7 497h-59.9l-75.1 50.4-17.8-50.4h-18V308.3h170.7v418.8zM526.1 486.9H393.3c2.1-44.9 4.3-104.3 6.6-172.9h130.9l-0.1-8.1c0-0.6-0.2-14.7-2.3-29.1-2.1-15-6.6-34.9-21-34.9H287.8c4.4-20.6 15.7-69.7 29.4-93.8l6.4-11.2-12.9-0.7c-0.8 0-19.6-0.9-41.4 10.6-35.7 19-51.7 56.4-58.7 84.4-18.4 73.1-44.6 123.9-55.7 145.6-3.3 6.4-5.3 10.2-6.2 12.8-1.8 4.9-0.8 9.8 2.8 13 10.5 9.5 38.2-2.9 38.5-3 0.6-0.3 1.3-0.6 2.2-1 13.9-6.3 55.1-25 69.8-84.5h56.7c0.7 32.2 3.1 138.4 2.9 172.9h-141l-2.1 1.5c-23.1 16.9-30.5 63.2-30.8 65.2l-1.4 9.2h167c-12.3 78.3-26.5 113.4-34 127.4-3.7 7-7.3 14-10.7 20.8-21.3 42.2-43.4 85.8-126.3 153.6-3.6 2.8-7 8-4.8 13.7 2.4 6.3 9.3 9.1 24.6 9.1 5.4 0 11.8-0.3 19.4-1 49.9-4.4 100.8-18 135.1-87.6 17-35.1 31.7-71.7 43.9-108.9L497 850l5-12c0.8-1.9 19-46.3 5.1-95.9l-0.5-1.8-108.1-123-22 16.6c6.4-26.1 10.6-49.9 12.5-71.1h158.7v-8c0-40.1-18.5-63.9-19.2-64.9l-2.4-3z" />
+          <svg className="nice-btn-toutiao-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+            <rect width="1024" height="1024" rx="200" fill="#f85959" />
+            <path fill="#ffffff" d="M220 270h584c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
+            <path fill="#ffffff" d="M220 460h370c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
+            <path fill="#ffffff" d="M220 650h480c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
+            <circle cx="740" cy="530" r="58" fill="#ffffff" />
           </svg>
-          {copiedAction === 'zhihu' && <span className="dock-check-badge">✓</span>}
+          {copiedAction === 'toutiao' && <span className="dock-check-badge">✓</span>}
         </button>
-        <span className="dock-tooltip">复制到知乎</span>
+        <span className="dock-tooltip">复制到今日头条</span>
       </div>
 
-      {/* 3. 复制到稀土掘金 */}
+      {/* 复制到稀土掘金 */}
       <div className="nice-dock-item">
         <button
           id="nice-sidebar-juejin"
@@ -70,26 +74,23 @@ export const PlatformDock: React.FC<PlatformDockProps> = ({
         <span className="dock-tooltip">复制到稀土掘金</span>
       </div>
 
-      {/* 4. 复制到今日头条 */}
+      {/* 复制到知乎 */}
       <div className="nice-dock-item">
         <button
-          id="nice-sidebar-toutiao"
-          className="nice-btn nice-btn-toutiao"
-          onClick={onCopyToutiao}
-          title="复制到今日头条"
-          aria-label="复制到今日头条"
+            id="nice-sidebar-zhihu"
+            className="nice-btn nice-btn-zhihu"
+            onClick={onCopyZhihu}
+            title="复制到知乎"
+            aria-label="复制到知乎"
         >
-          <svg className="nice-btn-toutiao-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-            <rect width="1024" height="1024" rx="200" fill="#f85959" />
-            <path fill="#ffffff" d="M220 270h584c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
-            <path fill="#ffffff" d="M220 460h370c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
-            <path fill="#ffffff" d="M220 650h480c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
-            <circle cx="740" cy="530" r="58" fill="#ffffff" />
+          <svg className="nice-btn-zhihu-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#1296db" d="M564.7 230.1V803h60l25.2 71.4L756.3 803h131.5V230.1H564.7z m247.7 497h-59.9l-75.1 50.4-17.8-50.4h-18V308.3h170.7v418.8zM526.1 486.9H393.3c2.1-44.9 4.3-104.3 6.6-172.9h130.9l-0.1-8.1c0-0.6-0.2-14.7-2.3-29.1-2.1-15-6.6-34.9-21-34.9H287.8c4.4-20.6 15.7-69.7 29.4-93.8l6.4-11.2-12.9-0.7c-0.8 0-19.6-0.9-41.4 10.6-35.7 19-51.7 56.4-58.7 84.4-18.4 73.1-44.6 123.9-55.7 145.6-3.3 6.4-5.3 10.2-6.2 12.8-1.8 4.9-0.8 9.8 2.8 13 10.5 9.5 38.2-2.9 38.5-3 0.6-0.3 1.3-0.6 2.2-1 13.9-6.3 55.1-25 69.8-84.5h56.7c0.7 32.2 3.1 138.4 2.9 172.9h-141l-2.1 1.5c-23.1 16.9-30.5 63.2-30.8 65.2l-1.4 9.2h167c-12.3 78.3-26.5 113.4-34 127.4-3.7 7-7.3 14-10.7 20.8-21.3 42.2-43.4 85.8-126.3 153.6-3.6 2.8-7 8-4.8 13.7 2.4 6.3 9.3 9.1 24.6 9.1 5.4 0 11.8-0.3 19.4-1 49.9-4.4 100.8-18 135.1-87.6 17-35.1 31.7-71.7 43.9-108.9L497 850l5-12c0.8-1.9 19-46.3 5.1-95.9l-0.5-1.8-108.1-123-22 16.6c6.4-26.1 10.6-49.9 12.5-71.1h158.7v-8c0-40.1-18.5-63.9-19.2-64.9l-2.4-3z" />
           </svg>
-          {copiedAction === 'toutiao' && <span className="dock-check-badge">✓</span>}
+          {copiedAction === 'zhihu' && <span className="dock-check-badge">✓</span>}
         </button>
-        <span className="dock-tooltip">复制到今日头条</span>
+        <span className="dock-tooltip">复制到知乎</span>
       </div>
+
     </aside>
   );
 };
