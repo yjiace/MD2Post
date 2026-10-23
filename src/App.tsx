@@ -282,8 +282,40 @@ export const App: React.FC = () => {
     const result: string[] = [];
     let inBq = false;
 
+    let inCode = false;
+
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
+      const isCodeFence = /^[ \t]*```/.test(line);
+
+      if (isCodeFence) {
+        if (!inCode) {
+          inCode = true;
+        } else {
+          inCode = false;
+          result.push(line);
+
+          // 4. 解决知乎 Markdown 语法输入模式下合并相邻连续代码块的缺陷：
+          // 知乎的 Markdown 解析器遇到两个代码块（即使中间有空行）也会自动聚合合并。
+          // 检查后续第一个非空行是否为新代码块起始行：
+          let nextNonEmptyIdx = -1;
+          for (let j = i + 1; j < lines.length; j++) {
+            if (lines[j].trim()) {
+              nextNonEmptyIdx = j;
+              break;
+            }
+          }
+          if (nextNonEmptyIdx !== -1 && /^[ \t]*```/.test(lines[nextNonEmptyIdx])) {
+            // 插入不可见的零宽字符 (\u200B)，作为无视觉污染的独立段落阻断知乎合并
+            result.push('');
+            result.push('\u200B');
+            result.push('');
+            i = nextNonEmptyIdx - 1;
+          }
+          continue;
+        }
+      }
+
       const isBqLine = /^[ \t]*>/.test(line);
 
       if (isBqLine) {

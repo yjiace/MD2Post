@@ -31,6 +31,7 @@ export async function transformToInlinedHtml(
   const isWechat = platform === 'wechat';
   const isToutiao = platform === 'toutiao';
   const isZhihu = platform === 'zhihu';
+  const codePalette = getCodeThemeInlinePalette(codeThemeId);
 
   // 1. Process Mermaid Diagrams: Replace all diagrams with crisp PNG images
   const mermaidBlocks = clone.querySelectorAll('.md2post-mermaid');
@@ -82,9 +83,14 @@ export async function transformToInlinedHtml(
       const rawCode = codeAttr ? decodeURIComponent(codeAttr) : '';
       if (isZhihu) {
         const pre = document.createElement('pre');
-        pre.setAttribute('style', 'background-color: #282c34; color: #abb2bf; padding: 12px; border-radius: 6px; font-size: 13px;');
+        pre.className = 'md2post-pre';
+        pre.setAttribute(
+          'style',
+          `display: block; margin: 16px 0 !important; padding: 14px 16px !important; background-color: ${codePalette.containerBg || '#282c34'}; color: ${codePalette.textColor || '#abb2bf'}; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13.5px; line-height: 1.6; border-radius: 6px; overflow-x: auto; white-space: pre !important; word-break: normal;`
+        );
         const code = document.createElement('code');
         code.className = 'language-mermaid';
+        code.setAttribute('style', 'font-family: inherit; font-size: inherit; background-color: transparent; white-space: pre !important;');
         code.textContent = rawCode;
         pre.appendChild(code);
         block.parentNode?.replaceChild(pre, block);
@@ -683,7 +689,6 @@ export async function transformToInlinedHtml(
   }
 
   // 11. Code Blocks & Syntax Highlighting: CRITICAL FIRST STEP - Apply token colors BEFORE replacing tags!
-  const codePalette = getCodeThemeInlinePalette(codeThemeId);
 
   // 11.1 Inline all highlight.js syntax token colors directly onto spans (WORKS ACROSS ALL PLATFORMS)
   const hljsSpans = clone.querySelectorAll<HTMLSpanElement>('span[class*="hljs-"]');
@@ -831,10 +836,11 @@ export async function transformToInlinedHtml(
       );
     });
 
-  } else if (isZhihu) {
-    // Zhihu: Clean standard <pre><code class="language-..."> without line numbers,
-    // without Mac window header dots, and with syntax token colors inlined!
-    // This allows Zhihu to cleanly recognize it as an official code block with zero line-number corruption!
+  } else if (isZhihu || isToutiao) {
+    // Zhihu & Toutiao: Clean standard <pre><code class="language-..."> without line numbers,
+    // without Mac window header dots, and with syntax token colors inlined and explicit newlines (\n)!
+    // This allows Zhihu & Toutiao rich-text editors (Draft.js / ProseMirror) to cleanly recognize official
+    // multi-line code blocks without line-number corruption or collapsing onto a single line!
     clone.querySelectorAll('.md2post-code-container').forEach(container => {
       const langEl = container.querySelector('.code-lang');
       const lang = langEl?.textContent?.trim() || '';
@@ -854,9 +860,10 @@ export async function transformToInlinedHtml(
       }
 
       const pre = document.createElement('pre');
+      pre.className = 'md2post-pre';
       pre.setAttribute(
         'style',
-        `display: block; margin: 16px 0 !important; padding: 14px 16px !important; background-color: ${codePalette.containerBg || '#282c34'}; color: ${codePalette.textColor || '#abb2bf'}; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13.5px; line-height: 1.55; border-radius: 6px; overflow-x: auto; white-space: pre !important; word-break: normal;`
+        `display: block; margin: 16px 0 !important; padding: 14px 16px !important; background-color: ${codePalette.containerBg || '#282c34'}; color: ${codePalette.textColor || '#abb2bf'}; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 13.5px; line-height: 1.6; border-radius: 6px; overflow-x: auto; white-space: pre !important; word-break: normal;`
       );
 
       const codeEl = document.createElement('code');
@@ -870,7 +877,7 @@ export async function transformToInlinedHtml(
       container.parentNode?.replaceChild(pre, container);
     });
   } else {
-    // Zhihu, Toutiao & Universal: Use standard styled <div> container with Mac window header,
+    // Universal: Use standard styled <div> container with Mac window header,
     // inlined syntax token colors, and <pre><code> preserving full formatting and indentation!
     clone.querySelectorAll('.md2post-code-container').forEach(container => {
       container.setAttribute(
@@ -934,6 +941,40 @@ export async function transformToInlinedHtml(
       });
     });
   }
+
+  // 11.4 Prevent adjacent code blocks (or diagrams degraded to code) from merging in Zhihu / Draft.js:
+  // In Draft.js (Zhihu), consecutive 'code-block' elements without an intervening 'unstyled' paragraph (<p>)
+  // are automatically aggregated and rendered inside the SAME visual code block wrapper.
+  // To guarantee strict block isolation, insert a clean paragraph separator (<p><br></p>) between any adjacent code blocks.
+  const codeBlockHolders = Array.from(clone.querySelectorAll('pre, .md2post-code-container')).filter(
+    el => !el.parentElement?.closest('.md2post-code-container')
+  );
+  codeBlockHolders.forEach(blockEl => {
+    let nextNode = blockEl.nextSibling;
+    // Skip empty whitespace text nodes
+    while (nextNode && nextNode.nodeType === Node.TEXT_NODE && !nextNode.textContent?.trim()) {
+      nextNode = nextNode.nextSibling;
+    }
+
+    // If the next meaningful element is also a code block container or pre, insert an empty paragraph separator between them
+    if (
+      nextNode &&
+      nextNode.nodeType === Node.ELEMENT_NODE &&
+      ((nextNode as Element).tagName.toLowerCase() === 'pre' ||
+        (nextNode as Element).classList.contains('md2post-code-container'))
+    ) {
+      const separator = document.createElement('p');
+      separator.className = 'md2post-code-separator';
+      separator.setAttribute(
+        'style',
+        isZhihu
+          ? 'margin: 14px 0 !important; padding: 0 !important; line-height: 1.68; font-size: 16px;'
+          : 'margin: 12px 0 !important; padding: 0 !important; line-height: 1.6; font-size: 14px;'
+      );
+      separator.innerHTML = '<br>';
+      blockEl.parentNode?.insertBefore(separator, nextNode);
+    }
+  });
 
   // 12. Inline Code (strictly target inline code, NEVER code inside code blocks)
   clone.querySelectorAll('code').forEach(code => {
