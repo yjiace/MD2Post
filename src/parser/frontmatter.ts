@@ -1,5 +1,5 @@
 /**
- * Frontmatter, HTML Comments, and MindMapFloat Preprocessor
+ * Frontmatter and MindMapFloat Preprocessor
  */
 
 export interface PreprocessResult {
@@ -37,10 +37,7 @@ export function preprocessMarkdown(rawMarkdown: string): PreprocessResult {
   const mindMapRegex = /<MindMapFloat(?:\s+[^>]*)?>([\s\S]*?)<\/MindMapFloat>|<MindMapFloat(?:\s+[^>]*)?\/>/gi;
   text = text.replace(mindMapRegex, match => '\n'.repeat(match.split('\n').length - 1));
 
-  // 3. Strip HTML comments <!-- ... --> (preserve line count)
-  text = text.replace(/<!--[\s\S]*?-->/g, match => '\n'.repeat(match.split('\n').length - 1));
-
-  // 4. Normalize protocol-relative image URLs: //cdn.example.com/... -> https://cdn.example.com/... (C-12, F7-1, US-D1)
+  // 3. Normalize protocol-relative image URLs: //cdn.example.com/... -> https://cdn.example.com/... (C-12, F7-1, US-D1)
   // Markdown image syntax: ![alt](//cdn.xxx)
   text = text.replace(/!\[(.*?)\]\(\s*\/\/([^\s\)]+)\s*\)/g, '![$1](https://$2)');
   // HTML img syntax: <img src="//cdn.xxx" ...>
