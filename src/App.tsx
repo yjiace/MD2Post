@@ -18,6 +18,7 @@ import { syncEditorToPreview, syncPreviewToEditor } from './utils/scrollSync';
 import { formatPangu } from './parser/pangu';
 import { runPrecheck } from './utils/precheck';
 import { transformToInlinedHtml } from './platforms/wechatInliner';
+import { adaptMarkdownForCsdn } from './platforms/csdnAdapter';
 import { copyRichTextToClipboard, copyTextToClipboard } from './utils/clipboard';
 
 import { Header } from './components/Header';
@@ -507,6 +508,54 @@ export const App: React.FC = () => {
     }
   };
 
+  // 5. 复制到 CSDN (CSDN-tailored Anti-Leech Rich Text + Adapted Markdown Dual-Channel)
+  const handleCopyCsdn = async () => {
+    try {
+      setCopiedAction('csdn');
+
+      let domToCopy = (previewContainerRef.current?.querySelector('#nice') ||
+        previewContainerRef.current?.querySelector('.md2post-rendered-content') ||
+        document.querySelector('#nice')) as HTMLElement;
+
+      if (!domToCopy) {
+        const freshHtml = renderMarkdownWithMath(preprocessMarkdown(rawContent).cleanMarkdown, {
+          codeSettings: settings.codeSettings,
+          showImageCaptions: settings.showImageCaptions
+        });
+        domToCopy = document.createElement('div');
+        domToCopy.id = 'nice';
+        domToCopy.innerHTML = freshHtml;
+      }
+
+      const { inlinedHtml } = await transformToInlinedHtml(domToCopy, {
+        theme: activeTheme,
+        primaryColor: settings.primaryColor,
+        codeThemeId: settings.codeSettings.themeId,
+        convertFootnotes: false,
+        platform: 'csdn'
+      });
+
+      const rawClean = preprocessMarkdown(rawContent).cleanMarkdown || rawContent;
+      const freshCleanMarkdown = adaptMarkdownForCsdn(rawClean);
+
+      await copyRichTextToClipboard(inlinedHtml, freshCleanMarkdown);
+
+      const hasMermaid = /```mermaid/i.test(rawContent);
+      if (hasMermaid) {
+        showToast('已复制 CSDN 格式（已注入防盗链穿透）！文中含流程图，富文本若未解析可在预览区直接复制图片');
+      } else {
+        showToast('已复制 CSDN 格式（已注入防盗链穿透），支持直接粘贴到 CSDN 博客');
+      }
+    } catch (err) {
+      console.error('CSDN copy failed:', err);
+      showToast('复制失败，请重试');
+    } finally {
+      setTimeout(() => {
+        setCopiedAction(prev => (prev === 'csdn' ? null : prev));
+      }, 1500);
+    }
+  };
+
   // 4. 切换预览模式 (桌面 / 手机)
   const handleTogglePreviewMode = () => {
     const nextMode = settings.previewMode === 'mobile' ? 'desktop' : 'mobile';
@@ -655,6 +704,7 @@ export const App: React.FC = () => {
             onCopyZhihu={handleCopyZhihu}
             onCopyJuejin={handleCopyJuejin}
             onCopyToutiao={handleCopyToutiao}
+            onCopyCsdn={handleCopyCsdn}
             copiedAction={copiedAction}
           />
 

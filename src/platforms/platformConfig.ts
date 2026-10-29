@@ -45,6 +45,17 @@ export const PLATFORMS: Record<PlatformType, PlatformConfig> = {
     codeBlockStrategy: 'markdown-code',
     tipsStrategy: 'markdown-quote'
   },
+  csdn: {
+    id: 'csdn',
+    name: 'CSDN 博客',
+    badge: 'CSDN',
+    defaultCopyMode: 'rich-text',
+    supportExternalLinks: true,
+    convertLinksToFootnotes: false,
+    tableStrategy: 'pure-table',
+    codeBlockStrategy: 'inline-highlight',
+    tipsStrategy: 'styled-callout'
+  },
   universal: {
     id: 'universal',
     name: '通用富文本',

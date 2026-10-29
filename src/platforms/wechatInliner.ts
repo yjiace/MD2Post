@@ -31,6 +31,7 @@ export async function transformToInlinedHtml(
   const isWechat = platform === 'wechat';
   const isToutiao = platform === 'toutiao';
   const isZhihu = platform === 'zhihu';
+  const isCsdn = platform === 'csdn';
   const codePalette = getCodeThemeInlinePalette(codeThemeId);
 
   // 1. Process Mermaid Diagrams: Replace all diagrams with crisp PNG images
@@ -218,12 +219,14 @@ export async function transformToInlinedHtml(
     });
   }
 
-  // 4. Images: Clean up <figure>, normalize URLs, and adapt for WeChat/Zhihu/Toutiao
+  // 4. Images: Clean up <figure>, normalize URLs, and adapt for WeChat/Zhihu/Toutiao/CSDN
   clone.querySelectorAll('img').forEach(img => {
     let src = img.getAttribute('src') || '';
     if (src.startsWith('//')) {
       img.setAttribute('src', 'https:' + src);
     }
+    // 全局防盗链穿透：阻断向源站发送宿主平台 Referer，避免第三方图床（微信/知乎等）在 CSDN 加载时 403 碎裂
+    img.setAttribute('referrerpolicy', 'no-referrer');
   });
 
   clone.querySelectorAll('.md2post-image-figure, figure').forEach(fig => {
@@ -374,48 +377,38 @@ export async function transformToInlinedHtml(
     );
   });
 
-  // 7. GitHub Style Callout boxes: Emojis + platform-tailored containers
+  // 7. GitHub Style Callout boxes: Clean GFM Alerts style (border-left + uppercase title, no icons)
   clone.querySelectorAll('.md2post-callout').forEach(el => {
     const isTip = el.classList.contains('md2post-callout-tip');
     const isImportant = el.classList.contains('md2post-callout-important');
     const isWarning = el.classList.contains('md2post-callout-warning');
     const isCaution = el.classList.contains('md2post-callout-caution');
 
-    let borderColor = primaryColor;
+    let borderColor = '#0969da';
     let bgColor = '#f0f7ff';
-    let titleColor = primaryColor;
-    let badgeIcon = 'ℹ';
-    let emojiIcon = 'ℹ️';
-    let titleText = '注意';
+    let titleColor = '#0969da';
+    let titleText = 'NOTE';
 
     if (isTip) {
       borderColor = '#1a7f37';
       bgColor = '#f0fbf0';
       titleColor = '#1a7f37';
-      badgeIcon = '💡';
-      emojiIcon = '💡';
-      titleText = '提示';
+      titleText = 'TIP';
     } else if (isImportant) {
       borderColor = '#8250df';
       bgColor = '#fbf0ff';
       titleColor = '#8250df';
-      badgeIcon = '!';
-      emojiIcon = '📌';
-      titleText = '重点';
+      titleText = 'IMPORTANT';
     } else if (isWarning) {
-      borderColor = '#bf8700';
+      borderColor = '#9a6700';
       bgColor = '#fff8ea';
-      titleColor = '#bf8700';
-      badgeIcon = '!';
-      emojiIcon = '⚠️';
-      titleText = '警告';
+      titleColor = '#9a6700';
+      titleText = 'WARNING';
     } else if (isCaution) {
       borderColor = '#cf222e';
       bgColor = '#fff0f0';
       titleColor = '#cf222e';
-      badgeIcon = '✕';
-      emojiIcon = '🚨';
-      titleText = '危险';
+      titleText = 'CAUTION';
     }
 
     const titleEl = el.querySelector('.callout-title');
@@ -429,17 +422,16 @@ export async function transformToInlinedHtml(
     bodyHtml = bodyHtml.replace(/<div class="callout-header"[\s\S]*?<\/div>/gi, '').trim();
 
     if (isWechat) {
-      // WeChat: Use <section> with styled circular badge icon and <span> title (NEVER <strong> to avoid theme quotes)
+      // WeChat: Use <section> with GFM Alert border-left and clean text title
       const calloutSection = document.createElement('section');
       calloutSection.className = 'md2post-callout-section';
       calloutSection.setAttribute(
         'style',
-        `display: block; margin: 14px 0 !important; padding: 12px 16px !important; background-color: ${bgColor} !important; border-left: 4px solid ${borderColor} !important; border-radius: 4px; box-sizing: border-box !important; text-align: left !important;`
+        `display: block; margin: 14px 0 !important; padding: 10px 14px !important; background-color: ${bgColor} !important; border-left: 3.5px solid ${borderColor} !important; border-radius: 3px; box-sizing: border-box !important; text-align: left !important;`
       );
       calloutSection.innerHTML = `
-        <section style="display: flex; align-items: center; margin: 0 0 6px 0; line-height: 1.6; text-align: left;">
-          <span style="display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; background-color: ${titleColor}; color: #ffffff; font-size: 12px; font-weight: bold; margin-right: 8px; flex-shrink: 0; vertical-align: middle;">${badgeIcon}</span>
-          <span style="color: ${titleColor}; font-size: 15px; font-weight: 700; line-height: 1.6; vertical-align: middle;">${escapeHtml(titleText)}</span>
+        <section style="display: block; margin: 0 0 6px 0; line-height: 1.5; text-align: left;">
+          <span style="color: ${titleColor}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; line-height: 1.5; display: inline-block;">${escapeHtml(titleText)}</span>
         </section>
         <section style="display: block; margin: 0; padding: 0; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;">
           ${bodyHtml}
@@ -466,16 +458,16 @@ export async function transformToInlinedHtml(
       const bq = document.createElement('blockquote');
       bq.setAttribute(
         'style',
-        `display: block; margin: 16px 0; padding: 12px 16px; background-color: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 4px; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;`
+        `display: block; margin: 16px 0; padding: 10px 14px; background-color: ${bgColor}; border-left: 3.5px solid ${borderColor}; border-radius: 3px; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;`
       );
 
       // Title header as a standard left-aligned <p>
       const headerP = document.createElement('p');
       headerP.setAttribute(
         'style',
-        `margin: 0 0 6px 0 !important; font-size: 15px !important; font-weight: 700 !important; color: ${titleColor} !important; line-height: 1.6 !important; text-align: left !important;`
+        `margin: 0 0 6px 0 !important; font-size: 14px !important; font-weight: 700 !important; color: ${titleColor} !important; line-height: 1.5 !important; letter-spacing: 0.5px !important; text-align: left !important;`
       );
-      headerP.innerHTML = `<span style="margin-right: 6px; font-style: normal; font-size: 15px; vertical-align: baseline;">${emojiIcon}</span><strong style="color: ${titleColor}; font-weight: 700;">${escapeHtml(titleText)}</strong>`;
+      headerP.innerHTML = `<strong style="color: ${titleColor}; font-weight: 700;">${escapeHtml(titleText)}</strong>`;
       bq.appendChild(headerP);
 
       // Parse body paragraphs directly into bq
@@ -522,7 +514,7 @@ export async function transformToInlinedHtml(
       const bq = document.createElement('blockquote');
       bq.setAttribute(
         'style',
-        `display: block; margin: 14px 0; padding: 12px 16px; background-color: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 4px; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;`
+        `display: block; margin: 14px 0; padding: 10px 14px; background-color: ${bgColor}; border-left: 3.5px solid ${borderColor}; border-radius: 3px; color: #374151; font-size: 14.5px; line-height: 1.75; text-align: left;`
       );
 
       // Clean body content paragraphs first
@@ -546,13 +538,12 @@ export async function transformToInlinedHtml(
         lastBqP.style.marginBottom = '0';
       }
 
-      // Title header as a standard left-aligned <p> without flex or text-align: center to prevent Toutiao editor from centering the icon
       const headerP = document.createElement('p');
       headerP.setAttribute(
         'style',
-        `margin: 0 0 8px 0 !important; font-size: 15px !important; font-weight: 700 !important; color: ${titleColor} !important; line-height: 1.6 !important; text-align: left !important;`
+        `margin: 0 0 6px 0 !important; font-size: 14px !important; font-weight: 700 !important; color: ${titleColor} !important; line-height: 1.5 !important; letter-spacing: 0.5px !important; text-align: left !important;`
       );
-      headerP.innerHTML = `<span style="margin-right: 6px; font-style: normal; font-size: 15px; vertical-align: baseline;">${emojiIcon}</span><span style="color: ${titleColor}; font-weight: 700;">${escapeHtml(titleText)}</span>`;
+      headerP.innerHTML = `<span style="color: ${titleColor}; font-weight: 700;">${escapeHtml(titleText)}</span>`;
 
       bq.appendChild(headerP);
       bq.appendChild(bodyDiv);
@@ -836,10 +827,10 @@ export async function transformToInlinedHtml(
       );
     });
 
-  } else if (isZhihu || isToutiao) {
-    // Zhihu & Toutiao: Clean standard <pre><code class="language-..."> without line numbers,
+  } else if (isZhihu || isToutiao || isCsdn) {
+    // Zhihu, Toutiao & CSDN: Clean standard <pre><code class="language-..."> without line numbers,
     // without Mac window header dots, and with syntax token colors inlined and explicit newlines (\n)!
-    // This allows Zhihu & Toutiao rich-text editors (Draft.js / ProseMirror) to cleanly recognize official
+    // This allows rich-text editors (Draft.js / ProseMirror / CSDN Editor) to cleanly recognize official
     // multi-line code blocks without line-number corruption or collapsing onto a single line!
     clone.querySelectorAll('.md2post-code-container').forEach(container => {
       const langEl = container.querySelector('.code-lang');
@@ -1078,6 +1069,11 @@ export async function transformToInlinedHtml(
     );
   }
   wrapper.innerHTML = processedHtml;
+
+  // Global anti-leech guarantee: Ensure every <img> in output contains referrerpolicy="no-referrer"
+  wrapper.querySelectorAll('img').forEach(img => {
+    img.setAttribute('referrerpolicy', 'no-referrer');
+  });
 
   // Safety pass: Scan and normalize any abnormal line-height (e.g. line-height: 0) to guarantee WeChat #1.3 compliance
   wrapper.querySelectorAll('*').forEach(el => {

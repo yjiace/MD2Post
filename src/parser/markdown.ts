@@ -8,50 +8,45 @@ export interface RenderOptions {
   showImageCaptions?: boolean;
 }
 
-// Callout types metadata
+// Callout types metadata (GitHub Flavored Markdown Alerts)
 export const CALLOUT_CONFIG: Record<
   string,
-  { type: string; title: string; color: string; bgColor: string; borderColor: string; icon: string }
+  { type: string; title: string; color: string; bgColor: string; borderColor: string }
 > = {
   note: {
     type: 'note',
-    title: '注意',
+    title: 'NOTE',
     color: '#0969da',
     bgColor: '#f0f7ff',
-    borderColor: '#0969da',
-    icon: 'ℹ'
+    borderColor: '#0969da'
   },
   tip: {
     type: 'tip',
-    title: '提示',
+    title: 'TIP',
     color: '#1a7f37',
     bgColor: '#f0fbf0',
-    borderColor: '#1a7f37',
-    icon: '💡'
+    borderColor: '#1a7f37'
   },
   important: {
     type: 'important',
-    title: '重点',
+    title: 'IMPORTANT',
     color: '#8250df',
     bgColor: '#fbf0ff',
-    borderColor: '#8250df',
-    icon: '!'
+    borderColor: '#8250df'
   },
   warning: {
     type: 'warning',
-    title: '警告',
-    color: '#bf8700',
+    title: 'WARNING',
+    color: '#9a6700',
     bgColor: '#fff8ea',
-    borderColor: '#bf8700',
-    icon: '!'
+    borderColor: '#9a6700'
   },
   caution: {
     type: 'caution',
-    title: '危险',
+    title: 'CAUTION',
     color: '#cf222e',
     bgColor: '#fff0f0',
-    borderColor: '#cf222e',
-    icon: '✕'
+    borderColor: '#cf222e'
   }
 };
 
@@ -383,7 +378,6 @@ export function createMarkdownParser(options: RenderOptions = {}) {
       const config = CALLOUT_CONFIG[calloutType];
       return `<div class="md2post-callout md2post-callout-${calloutType}"${lineAttr} style="border-left-color: ${config.borderColor}; background-color: ${config.bgColor};">
         <div class="callout-header" style="color: ${config.color};">
-          <span class="callout-icon" style="background-color: ${config.color}; color: #ffffff;">${config.icon}</span>
           <span class="callout-title">${config.title}</span>
         </div>
         <div class="callout-content">\n`;

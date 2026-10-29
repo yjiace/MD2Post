@@ -1,4 +1,5 @@
 import type { DiagnosticItem } from '../types';
+import { isLikelyAntiLeechImage } from '../platforms/csdnAdapter';
 
 export function runPrecheck(markdownContent: string, renderedContainer?: HTMLElement | null): DiagnosticItem[] {
   const issues: DiagnosticItem[] = [];
@@ -83,7 +84,16 @@ export function runPrecheck(markdownContent: string, renderedContainer?: HTMLEle
         type: 'error',
         category: 'image',
         title: `第 ${imgIdx} 张图片使用了本地私有路径`,
-        detail: '本地路径在发布到微信/知乎平台后读者无法加载，请上传至公开 CDN 或在线图床。',
+        detail: '本地路径在发布到微信/CSDN/知乎平台后读者无法加载，请上传至公开 CDN 或在线图床。',
+        sourceSnippet: imgMatch[0]
+      });
+    } else if (isLikelyAntiLeechImage(cleanUrl)) {
+      issues.push({
+        id: `img-antileech-${imgIdx}`,
+        type: 'info',
+        category: 'image',
+        title: `第 ${imgIdx} 张图片来自第三方防盗链图床`,
+        detail: '检测到微信/知乎等可能存在防盗链的外部图床，已自动为您启用防盗链穿透（referrerpolicy=no-referrer），可放心复制至 CSDN 发布。',
         sourceSnippet: imgMatch[0]
       });
     }

@@ -218,6 +218,13 @@ body,
   border-radius: 6px;
 }
 
+.nice-btn-csdn-icon {
+  padding: 4px;
+  width: 29px;
+  height: 29px;
+  border-radius: 6px;
+}
+
 .nice-btn-markdown-icon {
   padding: 4px 4px 4px 2px;
   width: 32px;

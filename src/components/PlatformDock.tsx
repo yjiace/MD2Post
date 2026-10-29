@@ -5,6 +5,7 @@ interface PlatformDockProps {
   onCopyZhihu: () => void;
   onCopyJuejin: () => void;
   onCopyToutiao: () => void;
+  onCopyCsdn: () => void;
   copiedAction: string | null;
 }
 
@@ -13,6 +14,7 @@ export const PlatformDock: React.FC<PlatformDockProps> = ({
   onCopyZhihu,
   onCopyJuejin,
   onCopyToutiao,
+  onCopyCsdn,
   copiedAction
 }) => {
   return (
@@ -45,12 +47,12 @@ export const PlatformDock: React.FC<PlatformDockProps> = ({
             title="复制到今日头条"
             aria-label="复制到今日头条"
         >
-          <svg className="nice-btn-toutiao-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-            <rect width="1024" height="1024" rx="200" fill="#f85959" />
-            <path fill="#ffffff" d="M220 270h584c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
-            <path fill="#ffffff" d="M220 460h370c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
-            <path fill="#ffffff" d="M220 650h480c20 0 36 16 36 36v64c0 20-16 36-36 36H220c-20 0-36-16-36-36v-64c0-20 16-36 36-36z" />
-            <circle cx="740" cy="530" r="58" fill="#ffffff" />
+          <svg className="nice-btn-toutiao-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 13.25L44 11V35L4 37.25Z" fill="#f85959" />
+            <path d="M9.5 19.5V17L15 17.5V20H9.5ZM9.5 23.5V21L15 21.5V24H9.5Z" fill="#ffffff" />
+            <path d="M15.5 25.5C17 22.1 16.5 16 16.5 16H19C19 16 19.8 22 18.5 25.5C17.2 29 12.5 33 12.5 33H8.5C8.5 33 13.9 29.2 15.5 25.5ZM20.5 32.5L18.25 29L21 28.75L23.5 32.5H20.5ZM25 18.5L27 15L30 16L39 15.5V18L35.5 20.5L40 21V23.5L32 22.5L24.5 24.5V22L29 21L25 18.5Z" fill="#ffffff" />
+            <path d="M31 23.5H33.5V32H31V23.5ZM24.5 32L27 28H30L27.5 32H24.5ZM37.5 31.5L35 28H38L40.5 31.5H37.5ZM8 28V26L23.5 25V27L8 28ZM24.5 27.5V25.5L40 24.5V26.5L24.5 27.5Z" fill="#ffffff" />
+            <path d="M29 18L36 17.5L32.5 19.5L29 18Z" fill="#f85959" />
           </svg>
           {copiedAction === 'toutiao' && <span className="dock-check-badge">✓</span>}
         </button>
@@ -72,6 +74,27 @@ export const PlatformDock: React.FC<PlatformDockProps> = ({
           {copiedAction === 'juejin' && <span className="dock-check-badge">✓</span>}
         </button>
         <span className="dock-tooltip">复制到稀土掘金</span>
+      </div>
+
+      {/* 复制到 CSDN */}
+      <div className="nice-dock-item">
+        <button
+          id="nice-sidebar-csdn"
+          className="nice-btn nice-btn-csdn"
+          onClick={onCopyCsdn}
+          title="复制到CSDN"
+          aria-label="复制到CSDN"
+        >
+          <svg className="nice-btn-csdn-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+            <rect width="1024" height="1024" rx="200" fill="#FC5531" />
+            <path
+              fill="#FFFFFF"
+              d="M740 375 L590 375 C570 345 525 325 470 325 C370 325 305 405 305 512 C305 619 370 699 470 699 C525 699 570 679 590 649 L740 649 C695 745 595 814 470 814 C295 814 165 680 165 512 C165 344 295 210 470 210 C595 210 695 279 740 375 Z"
+            />
+          </svg>
+          {copiedAction === 'csdn' && <span className="dock-check-badge">✓</span>}
+        </button>
+        <span className="dock-tooltip">复制到CSDN</span>
       </div>
 
       {/* 复制到知乎 */}

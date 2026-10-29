@@ -1,4 +1,4 @@
-export type PlatformType = 'wechat' | 'toutiao' | 'juejin' | 'zhihu' | 'universal';
+export type PlatformType = 'wechat' | 'toutiao' | 'juejin' | 'zhihu' | 'csdn' | 'universal';
 
 export type CopyMode = 'rich-text' | 'markdown';
 

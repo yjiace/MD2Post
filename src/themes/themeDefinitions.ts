@@ -68,33 +68,41 @@ ${themeCss}
 
 #nice .md2post-callout {
   margin: 1.2em 0;
-  padding: 0.8em 1.2em;
-  border-left: 4px solid #ef7060;
-  border-radius: 0 8px 8px 0;
-  background-color: #fff8f6;
+  padding: 0.6em 1em;
+  border-left: 3.5px solid #0969da;
+  border-radius: 0 4px 4px 0;
+  background-color: #f6f8fa;
+}
+
+#nice .md2post-callout-note {
+  border-left-color: #0969da;
+}
+#nice .md2post-callout-tip {
+  border-left-color: #1a7f37;
+}
+#nice .md2post-callout-important {
+  border-left-color: #8250df;
+}
+#nice .md2post-callout-warning {
+  border-left-color: #9a6700;
+}
+#nice .md2post-callout-caution {
+  border-left-color: #cf222e;
 }
 
 #nice .callout-header {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  line-height: 1.6;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  line-height: 1.5;
+  text-transform: uppercase;
 }
 
-#nice .callout-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: bold;
-  line-height: 1;
-  flex-shrink: 0;
+#nice .callout-title {
+  font-weight: 700;
 }
 
 #nice .callout-content p {
